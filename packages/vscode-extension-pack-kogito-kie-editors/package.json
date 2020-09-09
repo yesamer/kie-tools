@@ -44,6 +44,14 @@
       {
         "command": "extension.kogito.runTest",
         "title": "Run"
+      },
+      {
+        "command": "extension.kogito.runQuarkusDev",
+        "title": "Start Engine"
+      },
+      {
+        "command": "extension.kogito.reloadForm",
+        "title": "Reload Form"
       }
     ],
     "menus": {
@@ -55,6 +63,14 @@
         {
           "when": "resourceLangId =~ /scesim/",
           "command": "extension.kogito.runTest"
+        },
+        {
+          "when": "resourceLangId =~ /dmn/",
+          "command": "extension.kogito.runQuarkusDev"
+        },
+        {
+          "when": "kogito.urlPageOpen",
+          "command": "extension.kogito.reloadForm"
         }
       ],
       "editor/title": [
@@ -66,6 +82,16 @@
         {
           "when": "resourceLangId =~ /scesim/",
           "command": "extension.kogito.runTest",
+          "group": "navigation"
+        },
+        {
+          "when": "resourceLangId =~ /dmn/",
+          "command": "extension.kogito.runQuarkusDev",
+          "group": "navigation"
+        },
+        {
+          "when": "kogito.urlPageOpen && resourceScheme != file",
+          "command": "extension.kogito.reloadForm",
           "group": "navigation"
         }
       ]

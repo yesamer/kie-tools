@@ -14,10 +14,4 @@
  * limitations under the License.
  */
 
-/**
- * Identification of services.
- */
-export enum ServiceId {
-  TEST_SCENARIO_RUNNER = "TEST_SCENARIO_RUNNER",
-  QUARKUS_DEV_RUNNER = "QUARKUS_DEV_RUNNER"
-}
+export { QuarkusDevRunnerCapability } from "./QuarkusDevRunnerCapability";

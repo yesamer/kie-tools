@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-/**
- * Identification of services.
- */
-export enum ServiceId {
-  TEST_SCENARIO_RUNNER = "TEST_SCENARIO_RUNNER",
-  QUARKUS_DEV_RUNNER = "QUARKUS_DEV_RUNNER"
+import { Capability, CapabilityResponse } from "../../../api";
+
+export interface QuarkusDevRunnerCapability extends Capability {
+  startEngine(): Promise<CapabilityResponse<string>>;
+  stopEngine(): void;
 }

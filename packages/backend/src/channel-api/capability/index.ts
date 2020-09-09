@@ -16,3 +16,4 @@
 
 export { CapabilityChannelApi } from "./CapabilityChannelApi";
 export * from "./testScenarioRunner";
+export * from "./quarkusDevRunner";

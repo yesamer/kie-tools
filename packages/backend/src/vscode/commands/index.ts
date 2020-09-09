@@ -14,4 +14,5 @@
  * limitations under the License.
  */
 
+export { registerQuarkusDevRunnerCommand } from "./runQuarkusDevCommand";
 export { registerTestScenarioRunnerCommand } from "./runTestScenarioCommand";

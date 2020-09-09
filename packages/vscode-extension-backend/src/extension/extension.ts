@@ -17,7 +17,7 @@
 import { BackendManagerService } from "@kogito-tooling/backend/dist/api";
 import { BackendExtensionApi } from "@kogito-tooling/backend/dist/channel-api";
 import { DefaultHttpBridge } from "@kogito-tooling/backend/dist/http-bridge";
-import { QuarkusLocalServer } from "@kogito-tooling/backend/dist/node";
+import { QuarkusLocalServer, QuarkusDevRunnerService } from "@kogito-tooling/backend/dist/node";
 import { VsCodeTestScenarioRunnerService } from "@kogito-tooling/backend/dist/vscode";
 import * as path from "path";
 import * as vscode from "vscode";
@@ -27,11 +27,16 @@ let backendManager: BackendManagerService;
 export async function activate(context: vscode.ExtensionContext): Promise<BackendExtensionApi> {
   console.info("Backend extension is alive.");
 
+  const workspacePath =
+    vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0
+      ? vscode.workspace.workspaceFolders[0].uri.fsPath
+      : "";
+
   backendManager = new BackendManagerService({
     bridge: new DefaultHttpBridge(),
     localHttpServer: new QuarkusLocalServer(context.asAbsolutePath(path.join("dist", "server", "quarkus-runner.jar"))),
     bootstrapServices: [],
-    lazyServices: [new VsCodeTestScenarioRunnerService()]
+    lazyServices: [new VsCodeTestScenarioRunnerService(), new QuarkusDevRunnerService(workspacePath)]
   });
 
   await backendManager.start();

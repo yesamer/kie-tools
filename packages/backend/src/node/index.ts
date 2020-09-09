@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+export { QuarkusDevRunnerService } from "./QuarkusDevRunnerService";
 export { QuarkusLocalServer } from "./QuarkusLocalServer";
 export { TestScenarioRunnerService } from "./TestScenarioRunnerService";
 export * from "./utils";

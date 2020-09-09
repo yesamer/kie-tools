@@ -15,5 +15,6 @@
  */
 
 export * from "./commands";
+export { SimpleURLWebView } from "./SimpleIFrameWebview";
 export { VsCodeBackendProxy } from "./VsCodeBackendProxy";
 export { VsCodeTestScenarioRunnerService } from "./VsCodeTestScenarioRunnerService";

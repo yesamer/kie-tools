@@ -15,7 +15,12 @@
  */
 
 import { backendI18nDefaults, backendI18nDictionaries } from "@kogito-tooling/backend/dist/i18n";
-import { registerTestScenarioRunnerCommand, VsCodeBackendProxy } from "@kogito-tooling/backend/dist/vscode";
+import {
+  registerQuarkusDevRunnerCommand,
+  registerTestScenarioRunnerCommand,
+  SimpleURLWebView,
+  VsCodeBackendProxy
+} from "@kogito-tooling/backend/dist/vscode";
 import { I18n } from "@kogito-tooling/i18n/dist/core";
 import * as KogitoVsCode from "@kogito-tooling/vscode-extension";
 import { VsCodeWorkspaceApi } from "@kogito-tooling/workspace/dist/vscode";
@@ -39,6 +44,20 @@ export async function activate(context: vscode.ExtensionContext) {
     backendI18n: backendI18n,
     workspaceApi: workspaceApi
   });
+
+  const urlWebview = new SimpleURLWebView(context);
+
+  registerQuarkusDevRunnerCommand({
+    command: "extension.kogito.runQuarkusDev",
+    context: context,
+    backendProxy: backendProxy,
+    backendI18n: backendI18n,
+    urlWebview: urlWebview
+  });
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand("extension.kogito.reloadForm", () => urlWebview.reload())
+  );
 
   KogitoVsCode.startExtension({
     extensionName: "kie-group.vscode-extension-pack-kogito-kie-editors",
