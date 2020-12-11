@@ -30,6 +30,10 @@ function mockFunctions() {
 }
 jest.mock("@kogito-tooling/editor/dist/embedded", () => mockFunctions());
 
+afterAll(() => {
+  jest.resetAllMocks();
+});
+
 describe("EditorPage", () => {
   describe("Unsaved Alert", () => {
     test("should not appear by default with isDirty equal to false", () => {
@@ -59,6 +63,7 @@ describe("EditorPage", () => {
         ).wrapper
       );
 
+      fireEvent.click(getByTestId("view-kebab"));
       fireEvent.click(getByTestId("close-editor-button"));
 
       expect(queryByTestId("unsaved-alert")).toBeVisible();
@@ -71,6 +76,7 @@ describe("EditorPage", () => {
         ).wrapper
       );
 
+      fireEvent.click(getByTestId("view-kebab"));
       fireEvent.click(getByTestId("close-editor-button"));
       fireEvent.click(getByTestId("unsaved-alert-save-button"));
 
@@ -84,6 +90,7 @@ describe("EditorPage", () => {
         ).wrapper
       );
 
+      fireEvent.click(getByTestId("view-kebab"));
       fireEvent.click(getByTestId("close-editor-button"));
       fireEvent.click(getByTestId("unsaved-alert-close-button"));
 
@@ -97,6 +104,7 @@ describe("EditorPage", () => {
         ).wrapper
       );
 
+      fireEvent.click(getByTestId("view-kebab"));
       fireEvent.click(getByTestId("close-editor-button"));
       fireEvent.click(getByTestId("unsaved-alert-close-without-save-button"));
 

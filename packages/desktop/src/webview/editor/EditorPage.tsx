@@ -15,7 +15,7 @@
  */
 
 import { ChannelType } from "@kogito-tooling/channel-common-api";
-import { EmbeddedEditor, EmbeddedEditorRef, useDirtyState } from "@kogito-tooling/editor/dist/embedded";
+import { EmbeddedEditor, useDirtyState, useEditorRef } from "@kogito-tooling/editor/dist/embedded";
 import {
   Alert,
   AlertActionCloseButton,
@@ -27,30 +27,28 @@ import {
 } from "@patternfly/react-core";
 import * as electron from "electron";
 import * as React from "react";
-import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { File, FileSaveActions } from "../../common/File";
+import { useCallback, useContext, useEffect, useRef, useState } from "react";
+import { FileSaveActions } from "../../common/ElectronFile";
 import { GlobalContext } from "../common/GlobalContext";
 import { EditorToolbar } from "./EditorToolbar";
 import IpcRendererEvent = Electron.IpcRendererEvent;
 import { useDesktopI18n } from "../common/i18n";
 
 interface Props {
-  fileExtension: string;
   onClose: () => void;
+  onFilenameChange: (filePath: string) => void;
 }
 
 const ALERT_AUTO_CLOSE_TIMEOUT = 3000;
 
-let contentRequestData: { action: FileSaveActions; file?: File };
-
 export function EditorPage(props: Props) {
   const context = useContext(GlobalContext);
-  const editorRef = useRef<EmbeddedEditorRef>(null);
+  const { editor, editorRef } = useEditorRef();
   const copyContentTextArea = useRef<HTMLTextAreaElement>(null);
   const [copySuccessAlertVisible, setCopySuccessAlertVisible] = useState(false);
   const [saveFileSuccessAlertVisible, setSaveFileSuccessAlertVisible] = useState(false);
   const [savePreviewSuccessAlertVisible, setSavePreviewSuccessAlertVisible] = useState(false);
-  const isDirty = useDirtyState(editorRef);
+  const isDirty = useDirtyState(editor);
   const [showUnsavedAlert, setShowUnsavedAlert] = useState(false);
   const { locale, i18n } = useDesktopI18n();
 
@@ -60,27 +58,32 @@ export function EditorPage(props: Props) {
     } else {
       setShowUnsavedAlert(true);
     }
-  }, [isDirty]);
+  }, [isDirty, props.onClose]);
 
   const onCloseWithoutSave = useCallback(() => {
     setShowUnsavedAlert(false);
     props.onClose();
-  }, []);
+  }, [props.onClose]);
 
-  const requestSaveFile = useCallback(() => {
-    setShowUnsavedAlert(false);
-    editorRef.current?.getContent().then(content => {
-      contentRequestData.file = {
-        filePath: context.file!.filePath,
-        fileType: context.file!.fileType,
-        fileContent: content
-      };
-      electron.ipcRenderer.send("saveFile", contentRequestData);
-    });
-  }, []);
+  const requestSaveFile = useCallback(
+    (action: FileSaveActions) => {
+      setShowUnsavedAlert(false);
+      editor?.getContent().then(content => {
+        electron.ipcRenderer.send("saveFile", {
+          file: {
+            filePath: context.file.fileName,
+            fileType: context.file.fileExtension,
+            fileContent: content
+          },
+          action
+        });
+      });
+    },
+    [context.file, editor]
+  );
 
   const requestCopyContentToClipboard = useCallback(() => {
-    editorRef.current?.getContent().then(content => {
+    editor?.getContent().then(content => {
       if (copyContentTextArea.current) {
         copyContentTextArea.current.value = content;
         copyContentTextArea.current.select();
@@ -89,37 +92,24 @@ export function EditorPage(props: Props) {
         }
       }
     });
-  }, []);
+  }, [editor]);
 
   const requestSavePreview = useCallback(() => {
-    editorRef.current?.getPreview().then(previewSvg => {
+    editor?.getPreview().then(previewSvg => {
       electron.ipcRenderer.send("savePreview", {
-        filePath: context.file!.filePath,
+        filePath: context.file!.fileName,
         fileType: "svg",
         fileContent: previewSvg
       });
     });
-  }, []);
-
-  const requestThumbnailPreview = useCallback(() => {
-    editorRef.current?.getPreview().then(previewSvg => {
-      electron.ipcRenderer.send("saveThumbnail", {
-        filePath: context.file!.filePath,
-        fileType: "svg",
-        fileContent: previewSvg
-      });
-    });
-  }, []);
+  }, [editor, context.file]);
 
   const closeCopySuccessAlert = useCallback(() => setCopySuccessAlertVisible(false), []);
   const closeSaveFileSuccessAlert = useCallback(() => setSaveFileSuccessAlertVisible(false), []);
   const closeSavePreviewSuccessAlert = useCallback(() => setSavePreviewSuccessAlertVisible(false), []);
 
   const onSave = useCallback(() => {
-    contentRequestData = {
-      action: FileSaveActions.SAVE
-    };
-    requestSaveFile();
+    requestSaveFile(FileSaveActions.SAVE);
   }, [requestSaveFile]);
 
   useEffect(() => {
@@ -156,18 +146,14 @@ export function EditorPage(props: Props) {
   }, [savePreviewSuccessAlertVisible, closeSavePreviewSuccessAlert]);
 
   useEffect(() => {
-    electron.ipcRenderer.on(
-      "requestOpenedFile",
-      (event: IpcRendererEvent, data: { action: FileSaveActions; file?: File }) => {
-        contentRequestData = data;
-        requestSaveFile();
-      }
-    );
+    electron.ipcRenderer.on("requestOpenedFile", (event: IpcRendererEvent, data: { action: FileSaveActions }) => {
+      requestSaveFile(data.action);
+    });
 
     return () => {
       electron.ipcRenderer.removeAllListeners("requestOpenedFile");
     };
-  }, []);
+  }, [requestSaveFile]);
 
   useEffect(() => {
     electron.ipcRenderer.on("copyContentToClipboard", () => {
@@ -177,7 +163,7 @@ export function EditorPage(props: Props) {
     return () => {
       electron.ipcRenderer.removeAllListeners("copyContentToClipboard");
     };
-  }, []);
+  }, [requestCopyContentToClipboard]);
 
   useEffect(() => {
     electron.ipcRenderer.on("savePreview", () => {
@@ -187,29 +173,38 @@ export function EditorPage(props: Props) {
     return () => {
       electron.ipcRenderer.removeAllListeners("savePreview");
     };
-  }, []);
+  }, [requestSavePreview]);
 
   useEffect(() => {
-    electron.ipcRenderer.on("saveThumbnail", () => {
-      requestThumbnailPreview();
-    });
-
-    return () => {
-      electron.ipcRenderer.removeAllListeners("saveThumbnail");
-    };
-  }, [requestThumbnailPreview]);
-
-  useEffect(() => {
-    electron.ipcRenderer.on("saveFileSuccess", () => {
-      editorRef.current?.getStateControl().setSavedCommand();
-      setSaveFileSuccessAlertVisible(true);
-      requestThumbnailPreview();
+    electron.ipcRenderer.on("saveFileSuccess", (event: IpcRendererEvent, data: { filePath: string }): void => {
+      editor
+        ?.getPreview()
+        .then(previewSvg => {
+          electron.ipcRenderer.send("saveThumbnail", {
+            filePath: data.filePath,
+            fileType: "svg",
+            fileContent: previewSvg
+          });
+          editor?.getStateControl().setSavedCommand();
+          setSaveFileSuccessAlertVisible(true);
+          props.onFilenameChange(data.filePath);
+        })
+        .catch(err => console.log(err));
     });
 
     return () => {
       electron.ipcRenderer.removeAllListeners("saveFileSuccess");
     };
-  }, [requestThumbnailPreview]);
+  }, [editor, props.onFilenameChange]);
+
+  const saveOpenedFileThumbnail = useCallback(async () => {
+    const previewSvg = await editor?.getPreview();
+    electron.ipcRenderer.send("saveThumbnail", {
+      filePath: context.file!.fileName,
+      fileType: "svg",
+      fileContent: previewSvg
+    });
+  }, [editor, context.file]);
 
   useEffect(() => {
     electron.ipcRenderer.on("savePreviewSuccess", () => {
@@ -220,16 +215,6 @@ export function EditorPage(props: Props) {
       electron.ipcRenderer.removeAllListeners("savePreviewSuccess");
     };
   }, []);
-
-  const file = useMemo(
-    () => ({
-      fileName: context.file?.filePath ?? "",
-      fileExtension: context.file?.fileType!,
-      getFileContents: () => Promise.resolve(context.file?.fileContent ?? ""),
-      isReadOnly: false
-    }),
-    [context.file?.filePath, context.file?.fileType, context.file?.fileContent]
-  );
 
   return (
     <Page className={"kogito--editor-page"}>
@@ -252,7 +237,7 @@ export function EditorPage(props: Props) {
                   }
                   actionLinks={
                     <React.Fragment>
-                      <AlertActionLink data-testid="unsaved-alert-save-button" onClick={requestSaveFile}>
+                      <AlertActionLink data-testid="unsaved-alert-save-button" onClick={onSave}>
                         {i18n.terms.save}
                       </AlertActionLink>
                       <AlertActionLink
@@ -297,10 +282,10 @@ export function EditorPage(props: Props) {
             )}
             <EmbeddedEditor
               ref={editorRef}
-              file={file}
-              channelType={ChannelType.DESKTOP}
-              receive_ready={requestThumbnailPreview}
+              file={context.file}
+              receive_ready={saveOpenedFileThumbnail}
               editorEnvelopeLocator={context.editorEnvelopeLocator}
+              channelType={ChannelType.DESKTOP}
               locale={locale}
             />
           </StackItem>

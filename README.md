@@ -10,7 +10,7 @@ Kogito
 [![GitHub Issues](https://img.shields.io/github/issues/kiegroup/kogito-tooling.svg)]()
 [![Pull Requests](https://img.shields.io/github/issues-pr/kiegroup/kogito-tooling.svg?style=flat-square)](https://github.com/kiegroup/kogito-tooling/pulls)
 [![Contributors](https://img.shields.io/github/contributors/kiegroup/kogito-tooling.svg?style=flat-square)](https://github.com/kiegroup/kogito-tooling/graphs/contributors)
-[![License](https://img.shields.io/github/license/kiegroup/kogito-tooling.svg)](https://github.com/kiegroup/kogito-tooling/blob/master/LICENSE-ASL-2.0.txt)
+[![License](https://img.shields.io/github/license/kiegroup/kogito-tooling.svg)](https://github.com/kiegroup/kogito-tooling/blob/master/LICENSE)
 [![Twitter Follow](https://img.shields.io/twitter/follow/kogito_kie.svg?label=Follow&style=social)](https://twitter.com/kogito_kie?lang=en)
 
 Quick Links
@@ -77,30 +77,49 @@ Build from source
 Develop
 --------------------
 
-> **NOTE:** We recommend using *LTS* version of Node.js when developing this project.
+> **NOTE:** We recommend using *LTS* version of Node.js when developing this project. Our CI uses Node `12.16.3` and Yarn `1.19.1`.
+
+> **NOTE:** This repo now consumes NPM packages containing the exploded WARs of the BPMN, DMN, and SceSim Editors. For this reason, if you want to use a local build of one of them during development, you can use some environment variables to point to the exploded WAR directories.
+> - BPMN: `EXTERNAL_RESOURCE_PATH__bpmnEditor`
+> - DMN: `EXTERNAL_RESOURCE_PATH__dmnEditor`
+> - SceSim: `EXTERNAL_RESOURCE_PATH__scesimEditor`
+>
+> **Example:**
+>
+> $ export EXTERNAL_RESOURCE_PATH__bpmnEditor=/Users/tiago/redhat/kie-wb-common/kie-wb-common-stunner/kie-wb-common-stunner-sets/kie-wb-common-stunner-bpmn/kie-wb-common-stunner-bpmn-kogito-runtime/target/kie-wb-common-stunner-bpmn-kogito-runtime
+>
+> $ yarn run init && yarn run build:prod
+>
+> This is only necessary for these GWT-based Editors.
     
-##### VSCode Extension
-1. After you've successfully built the project following the instructions above, open the `packages/vscode-extension-pack-kogito-kie-editors` folder on VSCode. Use a new VSCode window so that the `packages/vscode-extension-pack-kogito-kie-editors` folder shows up as root in the VSCode explorer.
+##### VS Code Extension
+1. After you've successfully built the project following the instructions above, open the `packages/vscode-extension-pack-kogito-kie-editors` folder on VS Code. Use a new VS Code window so that the `packages/vscode-extension-pack-kogito-kie-editors` folder shows up as root in the VS Code explorer.
 2. From there, you can Run the extension or the integration tests by using the `Debug` menu/section. You can also use the respective shortcuts (F5 to start debugging, for instance).
-3. **Remember!** If you make changes to packages other than `packages/vscode-extension-pack-kogito-kie-editors`, you have to manually rebuild them before relaunching the extension on VSCode.
+3. **NOTE:** To run the VS Code extension in development mode, you need `webpack` and `webpack-cli` to be globally installed on NPM. Normally you can do that with `npm install -g webpack@4.41.2 webpack-cli@3.3.10`, but `sudo` may be required depending on your installation.
+4. **Remember!** If you make changes to packages other than `packages/vscode-extension-pack-kogito-kie-editors`, you have to manually rebuild them before relaunching the extension on VS Code.
 
 ##### Chrome Extension
 1. After you've successfully built the project following the instructions above, open the `packages/chrome-extension-pack-kogito-kie-editors` folder on your favourite IDE. You can import the entire repo as well if you want to make changes to other packages.
 2. Run `yarn build:fast` on `packages/chrome-extension-pack-kogito-kie-editors`. This will create a version of the Chrome Extension that fetches the envelope locally.
-2. Open a terminal and run `yarn run serve-envelope` on `packages/chrome-extension-pack-kogito-kie-editors`. This will start a `webpack-dev-server` instance with the editors and their envelope. We use that because we don't pack the Chrome Extension bundle with the editors inside. Instead, we fetch them from GitHub pages.
+3. Open a terminal and run `yarn run serve-envelope` on `packages/chrome-extension-pack-kogito-kie-editors`. This will start a `webpack-dev-server` instance with the editors and their envelope. We use that because we don't pack the Chrome Extension bundle with the editors inside. Instead, we fetch them from GitHub pages.
 4. You also have to enable invalid certificates for resources loaded from localhost in your browser. To do that, go to `chrome://flags/#allow-insecure-localhost` in your Chrome browser and enable this flag. Alternativelly, you can go to `https://localhost:9001` and add an exception.
-3. Open Chrome and go to `chrome://extensions`. Enable "Developer mode" on the top right corner and click on "Load unpacked". Choose the `packages/chrome-extension-pack-kogito-kie-editors/dist` folder.
-4. From now on you can use the development version of the extension. **Remember!** After each change, you have to rebuild the changed modules and hit the "Refresh" button of the extension card.
+5. Open Chrome and go to `chrome://extensions`. Enable "Developer mode" on the top right corner and click on "Load unpacked". Choose the `packages/chrome-extension-pack-kogito-kie-editors/dist` folder.
+6. From now on you can use the development version of the extension. **Remember!** After each change, you have to rebuild the changed modules and hit the "Refresh" button of the extension card.
 
 ##### Online Editor
 1. After you've successfully built the project following the instructions above, go to `packages/online-editor`.
-1. Open a terminal and run `yarn start`. This will start a `webpack-dev-server` instance with the Online Editor resources.
-5. From now on you can use the development version of the Online Editor by accessing `https://localhost:9001`.
+2. Open a terminal and run `yarn start`. This will start a `webpack-dev-server` instance with the Online Editor resources.
+3. From now on you can use the development version of the Online Editor by accessing `https://localhost:9001`.
 
 ##### Desktop and Hub
 1. After you've successfully built the project following the instructions above, go to `packages/desktop` or `packages/hub`. They work exactly the same.
 2. To start the application in development mode, you can run `yarn start`. If you make changes and want to reload the app, run `yarn run build:fast && yarn start`. This will recompile the module and restart the Electron app. Remember: if you make changes to other modules, you have to build them too!
 3. To build and package the application for production (i.e. generating an executable), you can run `yarn run build:prod`. This will pack the application for the current OS. If you want to pack the application for a different OS, run `yarn run pack:linux`, for example. See `package.json` for more details.
+
+##### Standalone Editors
+1. After you've successfully built the project following the instructions above, go to `packages/kie-editors-standalone`.
+2. Open a terminal and run `yarn start --config webpack.package-resources.config.js`. This will start a `webpack-dev-server` instance with the Standalone Editors test page.
+3. From now on you can use the development version of the Standalone DMN Editor by accessing `https://localhost:9001/resources/dmn` and the Standalone BPMN Editor by accessing `https://localhost:9001/resources/bpmn`.
 
 
 Contribute

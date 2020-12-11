@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
+ *        http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,11 +21,11 @@ import { useGuidedTourPositionProvider } from "@kogito-tooling/guided-tour/dist/
 import * as CSS from "csstype";
 import * as React from "react";
 import { useImperativeHandle, useMemo, useRef } from "react";
-import { File, useEffectAfterFirstRender } from "../common";
-import { StateControl } from "../stateControl";
+import { File, StateControl } from "../../channel";
+import { useEffectAfterFirstRender } from "../common";
 import { KogitoEditorChannelApiImpl } from "./KogitoEditorChannelApiImpl";
-import { useConnectedEnvelopeServer } from "@kogito-tooling/envelope-bus/dist/hooks";
 import { EnvelopeServer } from "@kogito-tooling/envelope-bus/dist/channel";
+import { useConnectedEnvelopeServer } from "@kogito-tooling/envelope-bus/dist/hooks";
 
 type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
 
@@ -72,7 +72,7 @@ const RefForwardingEmbeddedEditor: React.RefForwardingComponent<EmbeddedEditorRe
   forwardedRef
 ) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const stateControl = useMemo(() => new StateControl(), []);
+  const stateControl = useMemo(() => new StateControl(), [props.file.getFileContents]);
 
   const envelopeMapping = useMemo(() => props.editorEnvelopeLocator.mapping.get(props.file.fileExtension), [
     props.editorEnvelopeLocator,
@@ -94,17 +94,24 @@ const RefForwardingEmbeddedEditor: React.RefForwardingComponent<EmbeddedEditorRe
           {
             fileExtension: props.file.fileExtension,
             resourcesPathPrefix: envelopeMapping?.resourcesPathPrefix ?? "",
-            initialLocale: props.locale
+            initialLocale: props.locale,
+            isReadOnly: props.file.isReadOnly
           }
         )
     );
-  }, []);
+  }, [envelopeMapping, props.file, props.editorEnvelopeLocator]);
 
   useConnectedEnvelopeServer(envelopeServer, kogitoEditorChannelApiImpl);
 
   useEffectAfterFirstRender(() => {
     envelopeServer.envelopeApi.notifications.receive_localeChange(props.locale);
   }, [props.locale]);
+
+  useEffectAfterFirstRender(() => {
+    props.file.getFileContents().then(content => {
+      envelopeServer.envelopeApi.notifications.receive_contentChanged({ content: content! });
+    });
+  }, [props.file.getFileContents]);
 
   // Register position provider for Guided Tour
   useGuidedTourPositionProvider(envelopeServer.envelopeApi, iframeRef);
@@ -133,7 +140,7 @@ const RefForwardingEmbeddedEditor: React.RefForwardingComponent<EmbeddedEditorRe
           envelopeServer.envelopeApi.notifications.receive_contentChanged({ content: content })
       };
     },
-    [envelopeServer]
+    [envelopeServer, stateControl]
   );
 
   return (
@@ -145,6 +152,7 @@ const RefForwardingEmbeddedEditor: React.RefForwardingComponent<EmbeddedEditorRe
       )}
       {envelopeMapping && (
         <iframe
+          key={envelopeMapping.envelopePath}
           ref={iframeRef}
           id={"kogito-iframe"}
           data-testid={"kogito-iframe"}

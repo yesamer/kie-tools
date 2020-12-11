@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 
-import { ChannelType } from "@kogito-tooling/channel-common-api";
-import { EmbeddedEditor, EmbeddedEditorRef, useDirtyState } from "@kogito-tooling/editor/dist/embedded";
-import { Alert, AlertActionCloseButton, AlertActionLink, Page, PageSection } from "@patternfly/react-core";
 import * as React from "react";
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router";
@@ -26,43 +23,64 @@ import { FullScreenToolbar } from "./EditorFullScreenToolbar";
 import { EditorToolbar } from "./EditorToolbar";
 import { useDmnTour } from "../tour";
 import { useOnlineI18n } from "../common/i18n";
+import { UpdateGistErrors } from "../common/GithubService";
+import { EmbedModal } from "./EmbedModal";
+import { useFileUrl } from "../common/Hooks";
+import { ChannelType } from "@kogito-tooling/channel-common-api";
+import { EmbeddedEditor, useDirtyState, useEditorRef } from "@kogito-tooling/editor/dist/embedded";
+import { Alert, AlertActionCloseButton, AlertActionLink, Page, PageSection } from "@patternfly/react-core";
+
+export enum Alerts {
+  NONE,
+  COPY,
+  SUCCESS_UPDATE_GIST,
+  SUCCESS_UPDATE_GIST_FILENAME,
+  INVALID_CURRENT_GIST,
+  INVALID_GIST_FILENAME,
+  UNSAVED,
+  ERROR
+}
+
+export enum Modal {
+  NONE,
+  GITHUB_TOKEN,
+  EMBED
+}
 
 interface Props {
   onFileNameChanged: (fileName: string, fileExtension: string) => void;
 }
 
-const ALERT_AUTO_CLOSE_TIMEOUT = 3000;
-
 export function EditorPage(props: Props) {
   const context = useContext(GlobalContext);
   const location = useLocation();
-  const editorRef = useRef<EmbeddedEditorRef>(null);
+  const { editor, editorRef } = useEditorRef();
   const downloadRef = useRef<HTMLAnchorElement>(null);
   const downloadPreviewRef = useRef<HTMLAnchorElement>(null);
   const copyContentTextArea = useRef<HTMLTextAreaElement>(null);
   const [isEditorReady, setIsEditorReady] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
-  const [copySuccessAlertVisible, setCopySuccessAlertVisible] = useState(false);
-  const [githubTokenModalVisible, setGithubTokenModalVisible] = useState(false);
-  const [showUnsavedAlert, setShowUnsavedAlert] = useState(false);
-  const isDirty = useDirtyState(editorRef);
+  const [updateGistFilenameUrl, setUpdateGistFilenameUrl] = useState("");
+  const [alert, setAlert] = useState(Alerts.NONE);
+  const [modal, setModal] = useState(Modal.NONE);
+  const isDirty = useDirtyState(editor);
   const { locale, i18n } = useOnlineI18n();
 
   const close = useCallback(() => {
     if (!isDirty) {
       window.location.href = window.location.href.split("?")[0].split("#")[0];
     } else {
-      setShowUnsavedAlert(true);
+      setAlert(Alerts.UNSAVED);
     }
   }, [isDirty]);
 
   const closeWithoutSaving = useCallback(() => {
-    setShowUnsavedAlert(false);
+    setAlert(Alerts.NONE);
     window.location.href = window.location.href.split("?")[0].split("#")[0];
   }, []);
 
   const requestSave = useCallback(() => {
-    editorRef.current?.getContent().then(content => {
+    editor?.getContent().then(content => {
       window.dispatchEvent(
         new CustomEvent("saveOnlineEditor", {
           detail: {
@@ -73,64 +91,122 @@ export function EditorPage(props: Props) {
         })
       );
     });
-  }, [context.file.fileName]);
+  }, [context.file.fileName, editor]);
 
   const requestDownload = useCallback(() => {
-    editorRef.current?.getStateControl().setSavedCommand();
-    setShowUnsavedAlert(false);
-    editorRef.current?.getContent().then(content => {
+    editor?.getStateControl().setSavedCommand();
+    setAlert(Alerts.NONE);
+    editor?.getContent().then(content => {
       if (downloadRef.current) {
         const fileBlob = new Blob([content], { type: "text/plain" });
         downloadRef.current.href = URL.createObjectURL(fileBlob);
         downloadRef.current.click();
       }
     });
-  }, []);
+  }, [editor]);
 
   const requestPreview = useCallback(() => {
-    editorRef.current?.getPreview().then(previewSvg => {
+    editor?.getPreview().then(previewSvg => {
       if (downloadPreviewRef.current && previewSvg) {
         const fileBlob = new Blob([previewSvg], { type: "image/svg+xml" });
         downloadPreviewRef.current.href = URL.createObjectURL(fileBlob);
         downloadPreviewRef.current.click();
       }
     });
-  }, []);
+  }, [editor]);
 
-  const requestExportGist = useCallback(() => {
-    editorRef.current?.getContent().then(content => {
-      if (!context.githubService.isAuthenticated()) {
-        setGithubTokenModalVisible(true);
-        return;
+  const fileUrl = useFileUrl();
+
+  const requestGistIt = useCallback(async () => {
+    if (editor) {
+      const content = await editor.getContent();
+
+      // update gist
+      if (fileUrl && context.githubService.isGist(fileUrl)) {
+        const userLogin = context.githubService.extractUserLoginFromFileUrl(fileUrl);
+        if (userLogin === context.githubService.getLogin()) {
+          try {
+            const filename = `${context.file.fileName}.${context.file.fileExtension}`;
+            const updateResponse = await context.githubService.updateGist({ filename, content });
+
+            if (updateResponse === UpdateGistErrors.INVALID_CURRENT_GIST) {
+              setAlert(Alerts.INVALID_CURRENT_GIST);
+              return;
+            }
+
+            if (updateResponse === UpdateGistErrors.INVALID_GIST_FILENAME) {
+              setAlert(Alerts.INVALID_GIST_FILENAME);
+              return;
+            }
+
+            editor.getStateControl().setSavedCommand();
+            if (filename !== context.githubService.getCurrentGist()?.filename) {
+              // FIXME: KOGITO-1202
+              setUpdateGistFilenameUrl(
+                `${window.location.origin}${window.location.pathname}?file=${updateResponse}#/editor/${fileExtension}`
+              );
+              setAlert(Alerts.SUCCESS_UPDATE_GIST_FILENAME);
+              return;
+            }
+
+            setAlert(Alerts.SUCCESS_UPDATE_GIST);
+            return;
+          } catch (err) {
+            console.error(err);
+            setAlert(Alerts.ERROR);
+            return;
+          }
+        }
       }
 
-      context.githubService
-        .createGist({
+      // create gist
+      try {
+        const newGistUrl = await context.githubService.createGist({
           filename: `${context.file.fileName}.${context.file.fileExtension}`,
           content: content,
           description: `${context.file.fileName}.${context.file.fileExtension}`,
           isPublic: true
-        })
-        .then(gistUrl => {
-          setGithubTokenModalVisible(false);
-          // FIXME: KOGITO-1202
-          window.location.href = `?file=${gistUrl}#/editor/${fileExtension}`;
-        })
-        .catch(() => setGithubTokenModalVisible(true));
-    });
-  }, [context.file.fileName]);
+        });
+
+        setAlert(Alerts.NONE);
+        // FIXME: KOGITO-1202
+        window.location.href = `?file=${newGistUrl}#/editor/${fileExtension}`;
+        return;
+      } catch (err) {
+        console.error(err);
+        setAlert(Alerts.ERROR);
+        return;
+      }
+    }
+  }, [fileUrl, context, editor]);
+
+  const fileExtension = useMemo(() => {
+    return context.routes.editor.args(location.pathname).type;
+  }, [location.pathname]);
+
+  const requestSetGitHubToken = useCallback(() => {
+    setModal(Modal.GITHUB_TOKEN);
+  }, []);
+
+  const requestEmbed = useCallback(() => {
+    setModal(Modal.EMBED);
+  }, []);
+
+  const closeModal = useCallback(() => {
+    setModal(Modal.NONE);
+  }, []);
 
   const requestCopyContentToClipboard = useCallback(() => {
-    editorRef.current?.getContent().then(content => {
+    editor?.getContent().then(content => {
       if (copyContentTextArea.current) {
         copyContentTextArea.current.value = content;
         copyContentTextArea.current.select();
         if (document.execCommand("copy")) {
-          setCopySuccessAlertVisible(true);
+          setAlert(Alerts.COPY);
         }
       }
     });
-  }, []);
+  }, [editor]);
 
   const enterFullscreen = useCallback(() => {
     document.documentElement.requestFullscreen?.();
@@ -146,31 +222,7 @@ export function EditorPage(props: Props) {
     setFullscreen(!fullscreen);
   }, [fullscreen]);
 
-  const fileExtension = useMemo(() => {
-    return context.routes.editor.args(location.pathname).type;
-  }, [location.pathname]);
-
-  const closeCopySuccessAlert = useCallback(() => setCopySuccessAlertVisible(false), []);
-
-  const closeGithubTokenModal = useCallback(() => setGithubTokenModalVisible(false), []);
-
-  const continueExport = useCallback(() => {
-    closeGithubTokenModal();
-    requestExportGist();
-  }, [closeGithubTokenModal, requestExportGist]);
-
   const onReady = useCallback(() => setIsEditorReady(true), []);
-
-  useEffect(() => {
-    if (closeCopySuccessAlert) {
-      const autoCloseCopySuccessAlert = setTimeout(closeCopySuccessAlert, ALERT_AUTO_CLOSE_TIMEOUT);
-      return () => clearInterval(autoCloseCopySuccessAlert);
-    }
-
-    return () => {
-      /* Do nothing */
-    };
-  }, [copySuccessAlertVisible]);
 
   useEffect(() => {
     if (downloadRef.current) {
@@ -206,6 +258,8 @@ export function EditorPage(props: Props) {
 
   useDmnTour(isEditorReady, context.file);
 
+  const closeAlert = useCallback(() => setAlert(Alerts.NONE), []);
+
   return (
     <Page
       header={
@@ -218,32 +272,85 @@ export function EditorPage(props: Props) {
           onCopyContentToClipboard={requestCopyContentToClipboard}
           isPageFullscreen={fullscreen}
           onPreview={requestPreview}
-          onExportGist={requestExportGist}
+          onSetGitHubToken={requestSetGitHubToken}
+          onGistIt={requestGistIt}
+          onEmbed={requestEmbed}
           isEdited={isDirty}
         />
       }
     >
       <PageSection isFilled={true} padding={{ default: "noPadding" }} style={{ flexBasis: "100%" }}>
-        {!fullscreen && copySuccessAlertVisible && (
+        {!fullscreen && alert === Alerts.COPY && (
           <div className={"kogito--alert-container"}>
             <Alert
+              className={"kogito--alert"}
               variant="success"
               title={i18n.editorPage.alerts.copy}
-              actionClose={<AlertActionCloseButton onClose={closeCopySuccessAlert} />}
+              actionClose={<AlertActionCloseButton onClose={closeAlert} />}
             />
           </div>
         )}
-        {!fullscreen && showUnsavedAlert && (
+        {!fullscreen && alert === Alerts.SUCCESS_UPDATE_GIST && (
+          <div className={"kogito--alert-container"}>
+            <Alert
+              className={"kogito--alert"}
+              variant="success"
+              title={i18n.editorPage.alerts.updateGist}
+              actionClose={<AlertActionCloseButton onClose={closeAlert} />}
+            />
+          </div>
+        )}
+        {!fullscreen && alert === Alerts.SUCCESS_UPDATE_GIST_FILENAME && (
+          <div className={"kogito--alert-container"}>
+            <Alert
+              className={"kogito--alert"}
+              variant="warning"
+              title={i18n.editorPage.alerts.updateGistFilename.title}
+              actionClose={<AlertActionCloseButton onClose={closeAlert} />}
+            >
+              <p>{i18n.editorPage.alerts.updateGistFilename.message}</p>
+              <p>{i18n.editorPage.alerts.updateGistFilename.yourNewUrl}:</p>
+              <p>{updateGistFilenameUrl}</p>
+            </Alert>
+          </div>
+        )}
+        {!fullscreen && alert === Alerts.INVALID_CURRENT_GIST && (
+          <div className={"kogito--alert-container"}>
+            <Alert
+              className={"kogito--alert"}
+              variant="danger"
+              title={i18n.editorPage.alerts.invalidCurrentGist}
+              actionClose={<AlertActionCloseButton onClose={closeAlert} />}
+            />
+          </div>
+        )}
+        {!fullscreen && alert === Alerts.INVALID_GIST_FILENAME && (
+          <div className={"kogito--alert-container"}>
+            <Alert
+              className={"kogito--alert"}
+              variant="danger"
+              title={i18n.editorPage.alerts.invalidGistFilename}
+              actionClose={<AlertActionCloseButton onClose={closeAlert} />}
+            />
+          </div>
+        )}
+        {!fullscreen && alert === Alerts.ERROR && (
+          <div className={"kogito--alert-container"}>
+            <Alert
+              className={"kogito--alert"}
+              variant="danger"
+              title={i18n.editorPage.alerts.error}
+              actionClose={<AlertActionCloseButton onClose={closeAlert} />}
+            />
+          </div>
+        )}
+        {!fullscreen && alert === Alerts.UNSAVED && (
           <div className={"kogito--alert-container-unsaved"} data-testid="unsaved-alert">
             <Alert
+              className={"kogito--alert"}
               variant="warning"
               title={i18n.editorPage.alerts.unsaved.title}
-              actionClose={
-                <AlertActionCloseButton
-                  data-testid="unsaved-alert-close-button"
-                  onClose={() => setShowUnsavedAlert(false)}
-                />
-              }
+              actionClose={<AlertActionCloseButton data-testid="unsaved-alert-close-button" onClose={closeAlert} />}
               actionLinks={
                 <React.Fragment>
                   <AlertActionLink data-testid="unsaved-alert-save-button" onClick={requestDownload}>
@@ -259,11 +366,13 @@ export function EditorPage(props: Props) {
             </Alert>
           </div>
         )}
-        {!fullscreen && githubTokenModalVisible && (
-          <GithubTokenModal
-            isOpen={githubTokenModalVisible}
-            onClose={closeGithubTokenModal}
-            onContinue={continueExport}
+        {!fullscreen && <GithubTokenModal isOpen={modal === Modal.GITHUB_TOKEN} onClose={closeModal} />}
+        {!fullscreen && (
+          <EmbedModal
+            isOpen={modal === Modal.EMBED}
+            onClose={closeModal}
+            editor={editor}
+            fileExtension={fileExtension}
           />
         )}
         {fullscreen && <FullScreenToolbar onExitFullScreen={exitFullscreen} />}

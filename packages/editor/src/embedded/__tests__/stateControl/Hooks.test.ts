@@ -17,17 +17,17 @@
 import * as React from "react";
 import { renderHook } from "@testing-library/react-hooks";
 import { EmbeddedEditorRef } from "../../embedded";
-import { StateControl, useDirtyState } from "../../stateControl";
+import { useDirtyState } from "../../stateControl";
+import { StateControl } from "../../../channel";
 import { act } from "react-test-renderer";
 
 describe("useDirtyState", () => {
-  let embeddedEditorRef: EmbeddedEditorRef;
+  let editorRef: EmbeddedEditorRef;
   let stateControl: StateControl;
-  let editorRef: React.MutableRefObject<EmbeddedEditorRef>;
 
   beforeEach(() => {
     stateControl = new StateControl();
-    embeddedEditorRef = {
+    editorRef = {
       getStateControl: () => stateControl,
       getEnvelopeServer: () => ({} as any),
       undo: jest.fn(),
@@ -36,9 +36,6 @@ describe("useDirtyState", () => {
       getPreview: jest.fn(),
       setContent: jest.fn(),
       getElementPosition: jest.fn()
-    };
-    editorRef = {
-      current: embeddedEditorRef
     };
   });
 

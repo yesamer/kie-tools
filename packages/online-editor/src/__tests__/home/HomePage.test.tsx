@@ -17,7 +17,7 @@
 import * as React from "react";
 import { fireEvent, render, waitFor } from "@testing-library/react";
 import { HomePage } from "../../home/HomePage";
-import { File as UploadFile } from "@kogito-tooling/editor/dist/embedded";
+import { File as UploadFile } from "@kogito-tooling/editor/dist/channel";
 import { usingTestingGlobalContext, usingTestingOnlineI18nContext } from "../testing_utils";
 import { GithubService } from "../../common/GithubService";
 
@@ -80,7 +80,7 @@ describe("HomePage", () => {
 
       test("should show a not found url - github", async () => {
         const githubService = new GithubService();
-        jest.spyOn(githubService, "checkFileExistence").mockImplementation((url: string) => Promise.resolve(false));
+        jest.spyOn(githubService, "getGithubRawUrl").mockImplementation((url: string) => Promise.reject());
 
         const { findByText, getByTestId } = render(
           usingTestingOnlineI18nContext(
@@ -146,7 +146,7 @@ describe("HomePage", () => {
         window.fetch = originalFetch;
       });
 
-      test("should show an invalid gist error", async () => {
+      test("should show an invalid gist error - url", async () => {
         const githubService = new GithubService();
         jest.spyOn(githubService, "getGistRawUrlFromId").mockImplementation((url: string) => Promise.reject());
 
@@ -157,10 +157,10 @@ describe("HomePage", () => {
         );
 
         fireEvent.change(getByTestId("url-text-input"), { target: { value: "https://gist.github.com/test/aaaa" } });
-        expect(await findByText(`Enter a valid gist URL.`)).toBeTruthy();
+        expect(await findByText(`Enter a valid gist URL. If you're using a specific gist URL remember its name can't have whitespaces and upper-case letters.`)).toBeTruthy();
       });
 
-      test("should show an invalid gist error", async () => {
+      test("should show an invalid gist error - file type", async () => {
         const githubService = new GithubService();
         jest
           .spyOn(githubService, "getGistRawUrlFromId")
@@ -196,7 +196,11 @@ describe("HomePage", () => {
 
       test("should enable the open from source button - github", async () => {
         const githubService = new GithubService();
-        jest.spyOn(githubService, "checkFileExistence").mockImplementation((url: string) => Promise.resolve(true));
+        jest
+          .spyOn(githubService, "getGithubRawUrl")
+          .mockImplementation((url: string) =>
+            Promise.resolve("https://raw.githubusercontent.com/test-owner/test-repo/hash/test.txt")
+          );
 
         const { getByTestId } = render(
           usingTestingOnlineI18nContext(

@@ -1,4 +1,4 @@
-name: Create draft release
+name: "Release :: Draft"
 
 on:
   push:
@@ -225,14 +225,18 @@ jobs:
           cd kogito-online
           rm -rf $KOGITO_ONLINE_CHROME_EXT_DIR
           mkdir -p $KOGITO_ONLINE_CHROME_EXT_DIR
-          cp -r ../kogito-tooling/packages/kie-bc-editors-unpacked/bpmn $KOGITO_ONLINE_CHROME_EXT_DIR/
-          cp -r ../kogito-tooling/packages/kie-bc-editors-unpacked/dmn $KOGITO_ONLINE_CHROME_EXT_DIR/
-          cp -r ../kogito-tooling/packages/kie-bc-editors-unpacked/scesim $KOGITO_ONLINE_CHROME_EXT_DIR/
+          cp -r ../kogito-tooling/node_modules/@kogito-tooling/dmn-editor-unpacked/target/dmn $KOGITO_ONLINE_CHROME_EXT_DIR/
+          cp -r ../kogito-tooling/node_modules/@kogito-tooling/bpmn-editor-unpacked/target/bpmn $KOGITO_ONLINE_CHROME_EXT_DIR/
+          cp -r ../kogito-tooling/node_modules/@kogito-tooling/scesim-editor-unpacked/target/scesim $KOGITO_ONLINE_CHROME_EXT_DIR/
           cp -r ../kogito-tooling/packages/chrome-extension-pack-kogito-kie-editors/dist/envelope $KOGITO_ONLINE_CHROME_EXT_DIR/
           rm -rf $KOGITO_ONLINE_EDITOR_STAGING_DIR
           cp -r ../kogito-tooling/packages/online-editor/dist $KOGITO_ONLINE_EDITOR_STAGING_DIR
           rm -rf $KOGITO_ONLINE_EDITOR_STAGING_DIR/gwt-editors
           ln -s ../$KOGITO_ONLINE_CHROME_EXT_DIR $KOGITO_ONLINE_EDITOR_STAGING_DIR/gwt-editors
+          mkdir -p $KOGITO_ONLINE_EDITOR_STAGING_DIR/standalone/bpmn
+          mkdir -p $KOGITO_ONLINE_EDITOR_STAGING_DIR/standalone/dmn
+          cp ../kogito-tooling/packages/kie-editors-standalone/dist/bpmn/index.js $KOGITO_ONLINE_EDITOR_STAGING_DIR/standalone/bpmn
+          cp ../kogito-tooling/packages/kie-editors-standalone/dist/dmn/index.js $KOGITO_ONLINE_EDITOR_STAGING_DIR/standalone/dmn
           git config --global user.email "kietooling@gmail.com"
           git config --global user.name "Kogito Tooling Bot (kiegroup)"
           git add . && git commit -m "${{ steps.release_json.outputs.tag }} resources" || echo "No changes."

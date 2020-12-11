@@ -45,6 +45,15 @@ interface OnlineDictionary extends ReferenceDictionary<OnlineDictionary> {
   editorPage: {
     alerts: {
       copy: string;
+      updateGist: string;
+      updateGistFilename: {
+        title: string;
+        message: string;
+        yourNewUrl: string;
+      };
+      invalidCurrentGist: string;
+      invalidGistFilename: string;
+      error: string;
       unsaved: {
         title: string;
         message: string;
@@ -53,11 +62,35 @@ interface OnlineDictionary extends ReferenceDictionary<OnlineDictionary> {
     };
   };
   editorToolbar: {
+    closeAndReturnHome: string;
+    enterFullScreenView: string;
+    saveAndDownload: string;
     sendChangesToGitHub: string;
     copySource: string;
     downloadSVG: string;
+    setGitHubToken: string;
     gistIt: string;
-    fileActions: string;
+    gistItTooltip: string;
+    share: string;
+    embed: string;
+  };
+  embedModal: {
+    title: string;
+    description: string;
+    copy: string;
+    source: {
+      current: {
+        label: string;
+        description: string;
+      };
+      gist: {
+        tooltip: string;
+        label: string;
+        description: string;
+      };
+    };
+    embedCode: string;
+    copiedToClipboard: string;
   };
   githubTokenModal: {
     header: {

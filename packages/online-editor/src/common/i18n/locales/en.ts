@@ -46,6 +46,15 @@ export const en: OnlineI18n = {
   editorPage: {
     alerts: {
       copy: "Content copied to clipboard",
+      updateGist: "Your gist was updated.",
+      updateGistFilename: {
+        title: "Your gist and its filename were updated!",
+        message: `Your gists filename was updated, and it can take a few seconds until the new ${en_common.names.url} is available.`,
+        yourNewUrl: `Your new ${en_common.names.url}`
+      },
+      invalidCurrentGist: `Your current gist ${en_common.names.url} is invalid. If you've updated its filename, it's necessary to update your ${en_common.names.url} as well.`,
+      invalidGistFilename: "Invalid filename. This gist already has a file with this name.",
+      error: `An error occurred trying to perform the last operation. Check if your ${en_common.names.github} token is still valid and try again later.`,
       unsaved: {
         title: "Unsaved changes will be lost",
         message: "Click Save to download your progress before closing.",
@@ -54,16 +63,42 @@ export const en: OnlineI18n = {
     }
   },
   editorToolbar: {
+    closeAndReturnHome: "Close and return Home",
+    enterFullScreenView: "Enter full screen view",
+    saveAndDownload: "Save & Download",
     sendChangesToGitHub: `Send changes to ${en_common.names.github}`,
     copySource: "Copy Source",
     downloadSVG: `${en_common.terms.download} ${en_common.names.svg}`,
+    setGitHubToken: `Set up your ${en_common.names.github} token`,
     gistIt: "Gist it!",
-    fileActions: "File actions"
+    gistItTooltip: `Set up your ${en_common.names.github} token to be able to create and update gists!`,
+    share: "Share",
+    embed: "Embed"
+  },
+  embedModal: {
+    title: "Embed",
+    description:
+      "Embed the editor and content in your page. Choose the options below and copy the embed code to your clipboard:",
+    copy: "Copy",
+    source: {
+      current: {
+        label: "Current content",
+        description: "The embedded Editor will contain the current content, so it cannot be changed externally."
+      },
+      gist: {
+        tooltip: `Only available when editing a file from a ${en_common.names.github} gist.`,
+        label: `${en_common.names.github} gist`,
+        description:
+          "The embedded Editor will fetch the content from the open gist. Changes made to this gist will be reflected in the Editor."
+      }
+    },
+    embedCode: "Embed code",
+    copiedToClipboard: "Copied to clipboard"
   },
   githubTokenModal: {
     header: {
       title: `${en_common.names.github} ${en_common.names.oauth} ${en_common.terms.token}`,
-      subtitle: `Authentication required for exporting to ${en_common.names.github} gist.`
+      subtitle: `Set up your ${en_common.names.github} token so you can create and update gist.`
     },
     footer: {
       createNewToken: "Create a new token",
@@ -87,7 +122,7 @@ export const en: OnlineI18n = {
       validating: `Validating ${en_common.names.url}`,
       invalidGistExtension: "File type on the provided gist is not supported.",
       invalidExtension: `File type on the provided ${en_common.names.url} is not supported.`,
-      invalidGist: `Enter a valid gist ${en_common.names.url}.`,
+      invalidGist: `Enter a valid gist ${en_common.names.url}. If you're using a specific gist ${en_common.names.url} remember its name can't have whitespaces and upper-case letters.`,
       invalidUrl: `This ${en_common.names.url} is not valid (don't forget "https://"!).`,
       notFoundUrl: `This ${en_common.names.url} does not exist.`,
       corsNotAvailable: `This ${en_common.names.url} cannot be opened because it doesn't allow other websites to access it.`,
@@ -117,7 +152,7 @@ export const en: OnlineI18n = {
   },
   guidedTour: {
     init: {
-      title: "Welcome to this 5 minutes tour",
+      title: "Welcome to this 5-minute tour",
       learnMore: `Learn more about the DMN online editor by taking this brief and interactive tour.`,
       letsGo: "Let's go"
     },
@@ -127,13 +162,13 @@ export const en: OnlineI18n = {
       nextSteps: {
         title: "As next steps, you can try to",
         firstStep: `Connect the ${"Age".bold()} input with the ${"Can drive?".bold()} decision;`,
-        secondStep: `Define the decision logic into the ${"Can drive?".bold()} node, to return ${"true".bold()} when ${"Age".bold()} is
-              greater ${"21".bold()}, otherwise ${"false".bold()};`,
+        secondStep: `Define the decision logic in the ${"Can drive?".bold()} node to return ${"true".bold()} when ${"Age".bold()} is
+              greater than ${"21".bold()}, otherwise ${"false".bold()};`,
         thirdStep: "Execute the model."
       },
-      findUsefulInfo: "You can find useful information at the",
+      findUsefulInfo: "You can find useful information in the",
       learnDMN: `Learn ${en_common.names.dmn} in 15 minutes`,
-      courseOr: "course or at the",
+      courseOr: "course or in the",
       kogitoDoc: `${en_common.names.kogito} documentation`,
       finish: "Finish the Tour"
     }

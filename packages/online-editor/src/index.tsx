@@ -16,8 +16,10 @@
 
 import * as React from "react";
 import * as ReactDOM from "react-dom";
+import "@patternfly/react-core/dist/styles/base.css";
+import "@patternfly/patternfly/patternfly-addons.scss";
 import { App } from "./App";
-import { newFile } from "@kogito-tooling/editor/dist/embedded";
+import { newFile } from "@kogito-tooling/editor/dist/channel";
 import {
   extractEditorFileExtensionFromUrl,
   extractFileExtension,
@@ -27,6 +29,7 @@ import {
 import { GithubService } from "./common/GithubService";
 import { Alert, AlertActionLink, AlertVariant } from "@patternfly/react-core";
 import { EditorEnvelopeLocator } from "@kogito-tooling/editor/dist/api";
+import "../static/resources/style.css";
 
 const urlParams = new URLSearchParams(window.location.search);
 const githubService = new GithubService();
@@ -84,7 +87,16 @@ function waitForEventWithFileData() {
 
 function openFileByUrl() {
   const filePath = urlParams.get("file")!;
-  if (githubService.isGithub(filePath)) {
+  if (githubService.isGist(filePath)) {
+    githubService
+      .fetchGistFile(filePath)
+      .then(content => openFile(filePath, Promise.resolve(content)))
+      .catch(error => {
+        showFetchError(
+          `Not able to open this Gist. If you have updated your Gist filename it can take a few seconds until the URL is available to be used.`
+        );
+      });
+  } else if (githubService.isGithub(filePath)) {
     githubService
       .fetchGithubFile(filePath)
       .then(response => {

@@ -1,0 +1,12 @@
+.characteristic-item {
+  // write the following better
+  span,
+  strong {
+    user-select: text;
+  }
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+}
