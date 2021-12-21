@@ -1,0 +1,57 @@
+diff --git a/node_modules/boxed-expression-component/src/components/BoxedExpressionEditor/BoxedExpressionEditor.tsx b/node_modules/boxed-expression-component/src/components/BoxedExpressionEditor/BoxedExpressionEditor.tsx
+index 634cf3f..e5a2b3b 100644
+--- a/node_modules/boxed-expression-component/src/components/BoxedExpressionEditor/BoxedExpressionEditor.tsx
++++ b/node_modules/boxed-expression-component/src/components/BoxedExpressionEditor/BoxedExpressionEditor.tsx
+@@ -14,7 +14,7 @@
+  * limitations under the License.
+  */
+ 
+-import { I18nDictionariesProvider } from "@kogito-tooling/i18n/dist/react-components";
++import { I18nDictionariesProvider } from "@kie-tooling-core/i18n/dist/react-components";
+ import * as React from "react";
+ import { useCallback, useEffect, useMemo, useState } from "react";
+ import { ExpressionProps, PMMLParams } from "../../api";
+diff --git a/node_modules/boxed-expression-component/src/components/Table/EditableCell.tsx b/node_modules/boxed-expression-component/src/components/Table/EditableCell.tsx
+index 20c33ce..b994f17 100644
+--- a/node_modules/boxed-expression-component/src/components/Table/EditableCell.tsx
++++ b/node_modules/boxed-expression-component/src/components/Table/EditableCell.tsx
+@@ -14,8 +14,8 @@
+  * limitations under the License.
+  */
+ 
+-import { FeelInput, FeelInputRef } from "feel-input-component";
+-import * as Monaco from "monaco-editor";
++import { FeelInput, FeelInputRef } from "@kogito-tooling/feel-input-component";
++import * as Monaco from "@kie-tooling-core/monaco-editor";
+ import "monaco-editor/dev/vs/editor/editor.main.css";
+ import * as React from "react";
+ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+diff --git a/node_modules/boxed-expression-component/src/i18n/BoxedExpressionEditorI18n.ts b/node_modules/boxed-expression-component/src/i18n/BoxedExpressionEditorI18n.ts
+index d019c88..2b8aa20 100644
+--- a/node_modules/boxed-expression-component/src/i18n/BoxedExpressionEditorI18n.ts
++++ b/node_modules/boxed-expression-component/src/i18n/BoxedExpressionEditorI18n.ts
+@@ -14,7 +14,7 @@
+  * limitations under the License.
+  */
+ 
+-import { ReferenceDictionary } from "@kogito-tooling/i18n/dist/core";
++import { ReferenceDictionary } from "@kie-tooling-core/i18n/dist/core";
+ import { CommonI18n } from "@kogito-tooling/i18n-common-dictionary";
+ 
+ interface BoxedExpressionEditorDictionary extends ReferenceDictionary {
+diff --git a/node_modules/boxed-expression-component/src/i18n/setup.ts b/node_modules/boxed-expression-component/src/i18n/setup.ts
+index dafd832..690e0af 100644
+--- a/node_modules/boxed-expression-component/src/i18n/setup.ts
++++ b/node_modules/boxed-expression-component/src/i18n/setup.ts
+@@ -17,9 +17,9 @@
+ import * as React from "react";
+ import { useContext } from "react";
+ import { en } from "./locales";
+-import { I18nContextType } from "@kogito-tooling/i18n/dist/react-components";
++import { I18nContextType } from "@kie-tooling-core/i18n/dist/react-components";
+ import { BoxedExpressionEditorI18n } from "./BoxedExpressionEditorI18n";
+-import { I18nDefaults, I18nDictionaries } from "@kogito-tooling/i18n/dist/core";
++import { I18nDefaults, I18nDictionaries } from "@kie-tooling-core/i18n/dist/core";
+ 
+ export const boxedExpressionEditorI18nDefaults: I18nDefaults<BoxedExpressionEditorI18n> = {
+   locale: "en",
