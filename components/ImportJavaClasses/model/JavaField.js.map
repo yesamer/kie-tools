@@ -1,0 +1,1 @@
+{"version":3,"file":"JavaField.js","sourceRoot":"","sources":["../../../../src/components/ImportJavaClasses/model/JavaField.ts"],"names":[],"mappings":"AAgBA,MAAM,OAAO,SAAS;IAUpB,YAAY,IAAY,EAAE,IAAY,EAAE,UAAkB;QACxD,IAAI,CAAC,IAAI,GAAG,IAAI,CAAC;QACjB,IAAI,CAAC,IAAI,GAAG,IAAI,CAAC;QACjB,IAAI,CAAC,UAAU,GAAG,UAAU,CAAC;QAC7B,IAAI,CAAC,MAAM,GAAG,KAAK,CAAC;IACtB,CAAC;CACF"}

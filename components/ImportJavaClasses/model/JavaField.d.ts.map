@@ -1,0 +1,1 @@
+{"version":3,"file":"JavaField.d.ts","sourceRoot":"","sources":["../../../../src/components/ImportJavaClasses/model/JavaField.ts"],"names":[],"mappings":"AAgBA,qBAAa,SAAS;IAEb,IAAI,EAAE,MAAM,CAAC;IAEb,IAAI,EAAE,MAAM,CAAC;IAEb,MAAM,EAAE,OAAO,CAAC;IAEhB,UAAU,EAAE,MAAM,CAAC;gBAEd,IAAI,EAAE,MAAM,EAAE,IAAI,EAAE,MAAM,EAAE,UAAU,EAAE,MAAM;CAM3D"}
