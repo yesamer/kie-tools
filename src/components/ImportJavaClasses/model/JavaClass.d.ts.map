@@ -1,1 +1,0 @@
-{"version":3,"file":"JavaClass.d.ts","sourceRoot":"","sources":["../../../../../src/components/ImportJavaClasses/model/JavaClass.ts"],"names":[],"mappings":"AAgBA,OAAO,EAAE,SAAS,EAAE,MAAM,aAAa,CAAC;AAExC,qBAAa,SAAS;IAEb,IAAI,EAAE,MAAM,CAAC;IAEb,MAAM,EAAE,SAAS,EAAE,CAAC;IAEpB,YAAY,EAAE,OAAO,CAAC;gBAEjB,IAAI,EAAE,MAAM;IAMxB,SAAS,CAAC,MAAM,EAAE,SAAS,EAAE;CAI9B"}
