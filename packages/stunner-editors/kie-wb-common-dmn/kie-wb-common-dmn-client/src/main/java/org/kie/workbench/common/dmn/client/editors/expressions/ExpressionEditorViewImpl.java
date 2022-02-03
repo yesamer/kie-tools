@@ -325,8 +325,7 @@ public class ExpressionEditorViewImpl implements ExpressionEditorView {
                               final HasExpression hasExpression,
                               final Optional<HasName> hasName,
                               final boolean isOnlyVisualChangeAllowed) {
-        toggleBetaBoxedExpressionEditor(false);
-        toggleLegacyExpressionEditor(true);
+        //TODO check here removed
         this.nodeUUID = nodeUUID;
         this.hasExpression = hasExpression;
         this.hasName = hasName;
@@ -358,13 +357,13 @@ public class ExpressionEditorViewImpl implements ExpressionEditorView {
     }
 
     public void onEditorSelectedPageEvent(@Observes MultiPageEditorSelectedPageEvent editorSelectedPageEvent) {
-        toggleBetaBoxedExpressionEditor(false);
-        toggleLegacyExpressionEditor(true);
+        //TODO check here
+        toggleBetaBoxedExpressionEditor(true);
+        toggleLegacyExpressionEditor(false);
     }
 
     @EventHandler("try-it")
     public void onTryIt(final ClickEvent event) {
-        loadNewBoxedExpressionEditor();
         toggleLegacyExpressionEditor(false);
         toggleBetaBoxedExpressionEditor(true);
         preventDefault(event);
@@ -500,6 +499,10 @@ public class ExpressionEditorViewImpl implements ExpressionEditorView {
     void toggleLegacyExpressionEditor(final boolean enabled) {
         dmnExpressionType.classList.toggle("hidden", !enabled);
         dmnExpressionEditor.classList.toggle("hidden", !enabled);
+        if (enabled) {
+            gridPanel.setFocus(true);
+            onResize();
+        }
     }
 
     boolean isNewEditorEnabled() {
@@ -612,7 +615,9 @@ public class ExpressionEditorViewImpl implements ExpressionEditorView {
 
     @Override
     public void setFocus() {
-        gridPanel.setFocus(true);
+        toggleBetaBoxedExpressionEditor(true);
+        toggleLegacyExpressionEditor(false);
+        loadNewBoxedExpressionEditor();
     }
 
     HasExpression getHasExpression() {
