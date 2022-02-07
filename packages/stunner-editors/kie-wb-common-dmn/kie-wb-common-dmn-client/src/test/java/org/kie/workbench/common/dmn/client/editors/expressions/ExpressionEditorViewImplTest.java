@@ -31,7 +31,6 @@ import com.google.gwt.user.client.Element;
 import elemental2.dom.DOMTokenList;
 import elemental2.dom.HTMLAnchorElement;
 import elemental2.dom.HTMLDivElement;
-import org.jboss.errai.common.client.dom.Anchor;
 import org.jboss.errai.common.client.dom.Span;
 import org.jboss.errai.ui.client.local.spi.TranslationService;
 import org.junit.Before;
@@ -129,9 +128,6 @@ public class ExpressionEditorViewImplTest {
     private static final String NODE_UUID = "uuid";
 
     private static final String UNDEFINED_EXPRESSION_DEFINITION_NAME = "Undefined";
-
-    @Mock
-    private Anchor returnToLink;
 
     @Mock
     private Span expressionName;
@@ -262,6 +258,8 @@ public class ExpressionEditorViewImplTest {
     @Captor
     private ArgumentCaptor<FillExpressionCommand> commandCaptor;
 
+    private HTMLAnchorElement returnToLink;
+
     private ExpressionGridCache expressionGridCache;
 
     private DMNGridPanelContainer gridPanelContainer;
@@ -272,6 +270,7 @@ public class ExpressionEditorViewImplTest {
     @SuppressWarnings("unchecked")
     public void setup() {
         this.expressionGridCache = new ExpressionGridCacheImpl();
+        this.returnToLink = new HTMLAnchorElement();
         this.gridPanelContainer = spy(new DMNGridPanelContainer());
         when(sessionManager.getCurrentSession()).thenReturn(session);
         when(session.getExpressionGridCache()).thenReturn(expressionGridCache);
@@ -399,9 +398,8 @@ public class ExpressionEditorViewImplTest {
 
         final GridWidget expressionContainer = expressionContainerArgumentCaptor.getValue();
 
-        verify(gridLayer).select(eq(expressionContainer));
-        verify(gridLayer).enterPinnedMode(eq(expressionContainer),
-                                          any(Command.class));
+        verify(gridLayer).select(expressionContainer);
+        verify(gridLayer).enterPinnedMode(eq(expressionContainer), any(Command.class));
     }
 
     @Test
@@ -411,8 +409,8 @@ public class ExpressionEditorViewImplTest {
         final TransformMediator transformMediator = transformMediatorArgumentCaptor.getValue();
 
         verify(mousePanMediator).setBatchDraw(true);
-        verify(gridLayer).setDefaultTransformMediator(eq(transformMediator));
-        verify(viewportMediators).push(eq(mousePanMediator));
+        verify(gridLayer).setDefaultTransformMediator(transformMediator);
+        verify(viewportMediators).push(mousePanMediator);
     }
 
     @Test
@@ -429,7 +427,7 @@ public class ExpressionEditorViewImplTest {
 
         view.setReturnToLinkText(RETURN_LINK);
 
-        verify(returnToLink).setTextContent(eq(RETURN_LINK));
+        assertEquals(RETURN_LINK, returnToLink.textContent);
     }
 
     @Test
@@ -473,7 +471,7 @@ public class ExpressionEditorViewImplTest {
                            hasName,
                            false);
 
-        verify(expressionName).setTextContent(eq(NAME));
+        verify(expressionName).setTextContent(NAME);
     }
 
     @Test
@@ -499,7 +497,7 @@ public class ExpressionEditorViewImplTest {
                            hasName,
                            false);
 
-        verify(expressionType).setTextContent(eq(LITERAL_EXPRESSION.getText()));
+        verify(expressionType).setTextContent(LITERAL_EXPRESSION.getText());
     }
 
     @Test
@@ -511,7 +509,7 @@ public class ExpressionEditorViewImplTest {
                            hasName,
                            false);
 
-        verify(expressionType).setTextContent(eq("<" + UNDEFINED_EXPRESSION_DEFINITION_NAME + ">"));
+        verify(expressionType).setTextContent("<" + UNDEFINED_EXPRESSION_DEFINITION_NAME + ">");
     }
 
     @Test
@@ -530,9 +528,11 @@ public class ExpressionEditorViewImplTest {
 
     @Test
     public void testSetFocus() {
+        doNothing().when(view).loadNewBoxedExpressionEditor();
+
         view.setFocus();
 
-        verify(gridPanel).setFocus(true);
+        verify(view).loadNewBoxedExpressionEditor();
     }
 
     @Test
@@ -553,14 +553,13 @@ public class ExpressionEditorViewImplTest {
 
     @Test
     public void testEditingExpression() {
-        final ClickEvent event = mock(ClickEvent.class);
+        final Optional<HasName> hasName = Optional.of(HasName.NOP);
         view.setExpression(NODE_UUID,
                            hasExpression,
-                           Optional.of(HasName.NOP),
+                           hasName,
                            false);
 
-        verify(view).toggleLegacyExpressionEditor(true);
-        verify(view).toggleBetaBoxedExpressionEditor(false);
+        verify(view).setExpressionNameText(hasName);
     }
 
     @Test
