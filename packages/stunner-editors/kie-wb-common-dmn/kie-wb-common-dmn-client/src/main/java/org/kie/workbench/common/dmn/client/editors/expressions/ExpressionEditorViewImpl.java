@@ -605,6 +605,8 @@ public class ExpressionEditorViewImpl implements ExpressionEditorView {
 
     @Override
     public void setFocus() {
+        toggleBetaBoxedExpressionEditor(true);
+        toggleLegacyExpressionEditor(false);
         loadNewBoxedExpressionEditor();
     }
 
