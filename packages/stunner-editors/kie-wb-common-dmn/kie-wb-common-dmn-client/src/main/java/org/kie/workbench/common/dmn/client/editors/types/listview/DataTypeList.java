@@ -283,6 +283,31 @@ public class DataTypeList {
         addDataType(dataTypeManager.fromNew().get(), true);
     }
 
+    void addDataTypes(final HashMap<DataType, JavaClass> dataTypes) {
+        executeInCommandManager(() -> {
+
+            //resetSearchBar();
+
+            for (DataType dataType : dataTypes.keySet()) {
+                dataType.create();
+                DataTypeListItem item = makeListItem(dataType);
+                //item.refresh();
+
+                List<JavaField> javaFields = dataTypes.get(dataType).getFields();
+
+                for (final JavaField javaField : javaFields) {
+                    final DataType newDataType = createNewDataType(javaField);
+                    item.addNestedField(newDataType);
+                }
+
+            }
+            //showListItems();
+            //refreshItemsCSSAndHTMLPosition();
+
+            return CanvasCommandResultBuilder.SUCCESS;
+        });
+    }
+
     void addDataType(final DataType dataType, final boolean enableEditMode) {
         executeInCommandManager(() -> {
 
@@ -448,20 +473,26 @@ public class DataTypeList {
             return;
         }
 
+        HashMap<DataType, JavaClass> createdDataTypes = new HashMap<>();
         renameJavaClassToDMNName(javaClasses);
 
         for (JavaClass javaClass : javaClasses) {
             DataType newDataType = createNewDataType(javaClass);
             final Optional<DataType> existing = findDataTypeByName(newDataType.getName());
             if (existing.isPresent()) {
-                replace(existing.get(), newDataType);
-            } else {
-                insert(newDataType);
+                dndDataTypesHandler.deleteKeepingReferences(existing.get());
             }
-            if (javaClass.getFields() != null && !javaClass.getFields().isEmpty()) {
-                insertFields(newDataType, javaClass);
-            }
+
+            createdDataTypes.put(newDataType, javaClass);
         }
+
+        addDataTypes(createdDataTypes);
+
+        /*for (Map.Entry<DataType, JavaClass> entry : createdDataTypes.entrySet()) {
+            insertFields(entry.getKey(), entry.getValue());
+        }*/
+
+        //refreshItemsByUpdatedDataTypes(createdDataTypes.keySet().stream().collect(Collectors.toList()));
     }
 
     void renameJavaClassToDMNName(final List<JavaClass> javaClasses) {
@@ -506,10 +537,14 @@ public class DataTypeList {
     }
 
     void insertFields(final DataType structureDataType, final JavaClass javaClass) {
+        if (javaClass.getFields() == null || javaClass.getFields().isEmpty()) {
+            return;
+        }
+
         findItem(structureDataType).ifPresent(item -> {
             for (final JavaField javaField : javaClass.getFields()) {
                 final DataType newDataType = createNewDataType(javaField);
-                item.insertNestedField(newDataType);
+                item.addNestedField(newDataType);
             }
         });
     }

@@ -564,6 +564,10 @@ public class DataTypeListItem {
         enableEditModeAndUpdateCallbacks(getNewDataTypeHash(newDataType, referenceDataTypeHash));
     }
 
+    public List<DataType> addNestedField(final DataType newDataType) {
+        return newDataType.create(getDataType(), NESTED);
+    }
+
     public void insertNestedField(final DataType newDataType) {
 
         final String referenceDataTypeHash = dataTypeList.calculateHash(getDataType());
@@ -571,7 +575,7 @@ public class DataTypeListItem {
         closeEditMode();
         expand();
 
-        final List<DataType> updatedDataTypes = newDataType.create(getDataType(), NESTED);
+        final List<DataType> updatedDataTypes = addNestedField(newDataType);
 
         refreshItemsByUpdatedDataTypes(updatedDataTypes);
         expandAndHighlight(referenceDataTypeHash);
