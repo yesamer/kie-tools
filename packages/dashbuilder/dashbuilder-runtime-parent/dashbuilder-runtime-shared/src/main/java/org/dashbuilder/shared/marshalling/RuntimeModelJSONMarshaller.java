@@ -16,12 +16,15 @@
 package org.dashbuilder.shared.marshalling;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.enterprise.context.ApplicationScoped;
 
+import elemental2.dom.DomGlobal;
 import org.dashbuilder.dataprovider.DataSetProvider;
 import org.dashbuilder.dataprovider.DataSetProviderRegistry;
 import org.dashbuilder.dataprovider.DataSetProviderType;
@@ -29,6 +32,7 @@ import org.dashbuilder.dataset.def.ExternalDataSetDef;
 import org.dashbuilder.dataset.json.DataSetDefJSONMarshaller;
 import org.dashbuilder.json.Json;
 import org.dashbuilder.json.JsonObject;
+import org.dashbuilder.json.JsonType;
 import org.dashbuilder.navigation.NavTree;
 import org.dashbuilder.navigation.impl.NavTreeBuilder;
 import org.dashbuilder.navigation.json.NavTreeJSONMarshaller;
@@ -42,9 +46,10 @@ public class RuntimeModelJSONMarshaller {
     private static String LAST_MODIFIED = "lastModified";
     private static String NAV_TREE = "navTree";
     private static String LAYOUT_TEMPLATES = "layoutTemplates";
+    private static String PAGES = "pages";
     private static String EXTERNAL_DATASET_DEFS = "datasets";
-    
-    
+    private static String PROPERTIES = "properties";
+
     static final String NAV_GROUP_ID = "__runtime_dashboards";
     static final String NAV_GROUP_NAME = "Dashboards";
     static final String NAV_GROUP_DESC = "Dashboards";
@@ -86,6 +91,7 @@ public class RuntimeModelJSONMarshaller {
         var navTreeJson = NavTreeJSONMarshaller.get().toJson(model.getNavTree());
         var ltArray = Json.createArray();
         var externalDefsArray = Json.createArray();
+        var propertiesObject = Json.createObject();
 
         jsonObject.set(LAST_MODIFIED, Json.create(model.getLastModified()));
         jsonObject.set(NAV_TREE, navTreeJson);
@@ -98,14 +104,36 @@ public class RuntimeModelJSONMarshaller {
 
         i.set(0);
         model.getClientDataSets()
-             .forEach(def -> externalDefsArray.set(i.getAndIncrement(), defMarshaller.toJsonObject(def)));
+                .forEach(def -> externalDefsArray.set(i.getAndIncrement(), defMarshaller.toJsonObject(def)));
         jsonObject.set(EXTERNAL_DATASET_DEFS, externalDefsArray);
+
+        model.getProperties().forEach((k, v) -> propertiesObject.set(k, Json.create(v)));
+        jsonObject.set(PROPERTIES, propertiesObject);
 
         return jsonObject;
     }
 
     public RuntimeModel fromJson(String json) {
-        return fromJson(Json.parse(json));
+        return fromJson(toJsonObject(json));
+    }
+
+    public Map<String, String> retrieveProperties(String json) {
+        return extractProperties(toJsonObject(json));
+    }
+
+    private JsonObject toJsonObject(String json) {
+        JsonObject object = null;
+        try {
+            object = Json.parse(json);
+        } catch (Exception e) {
+            DomGlobal.console.debug(e);
+            throw new IllegalArgumentException("Error parsing Content");
+        }
+
+        if (object == null || object.getType() != JsonType.OBJECT) {
+            throw new IllegalArgumentException("Content is not valid");
+        }
+        return object;
     }
 
     public RuntimeModel fromJson(JsonObject jsonObject) {
@@ -115,33 +143,84 @@ public class RuntimeModelJSONMarshaller {
         var lastModified = jsonObject.getNumber(LAST_MODIFIED);
         var layoutTemplates = new ArrayList<LayoutTemplate>();
         var externalDefs = new ArrayList<ExternalDataSetDef>();
-
-        for (int i = 0; i < ltArray.length(); i++) {
-            var ltJson = ltArray.getObject(i);
-            layoutTemplates.add(LayoutTemplateJSONMarshaller.get().fromJson(ltJson));
+        var nPages = 0;
+        if (ltArray == null) {
+            ltArray = jsonObject.getArray(PAGES);
         }
 
-        for (int i = 0; externalDefsArray != null && i < externalDefsArray.length(); i++) {
-            var defJson = externalDefsArray.getObject(i).toJson();
+        if (ltArray == null || ltArray.length() == 0) {
+            throw new IllegalArgumentException("At least one page is required");
+        }
+
+        if (JsonType.ARRAY != ltArray.getType()) {
+            throw new IllegalArgumentException("Pages must be a list");
+        }
+
+        try {
+            nPages = ltArray.length();
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Pages must be a list", e);
+        }
+
+        LayoutTemplateJSONMarshaller.get().resetPageCounter();
+        for (int i = 0; i < nPages; i++) {
+            var ltJson = ltArray.getObject(i);
+            if (ltJson != null && ltJson.getType() == JsonType.OBJECT) {
+                try {
+                    layoutTemplates.add(LayoutTemplateJSONMarshaller.get().fromJson(ltJson));
+                } catch (Exception e) {
+                    throw new RuntimeException("Error reading page " + (i+1) + "\n" + e.getMessage(), e);
+                }
+            }
+        }
+        if (externalDefsArray != null) {
+            var nDatasets = 0;
             try {
-                externalDefs.add((ExternalDataSetDef) defMarshaller.fromJson(defJson));
+                nDatasets = externalDefsArray.length();
             } catch (Exception e) {
-                throw new RuntimeException("Error parsing external def ", e);
+                throw new RuntimeException("Data sets must be a list of data set definitions", e);
+            }
+            for (int i = 0; i < nDatasets; i++) {
+                try {
+                    var defJson = externalDefsArray.getObject(i).toJson();
+                    externalDefs.add((ExternalDataSetDef) defMarshaller.fromJson(defJson));
+                } catch (Exception e) {
+                    throw new RuntimeException("Error reading data set definition " + (i+1) + "\n" + e.getMessage(), e);
+                }
             }
         }
 
         var navTree = NavTreeJSONMarshaller.get().fromJson(navTreeJSONObject);
-        
+
         if (navTree == null || navTree.getRootItems().isEmpty()) {
             navTree = navTreeForTemplates(layoutTemplates);
         }
-        
+
+        var properties = extractProperties(jsonObject);
+
         return new RuntimeModel(navTree,
                 layoutTemplates,
                 lastModified.longValue(),
-                externalDefs);
+                externalDefs,
+                properties);
     }
-    
+
+    private HashMap<String, String> extractProperties(JsonObject jsonObject) {
+        var properties = new HashMap<String, String>();
+        try {
+            var propertiesObject = jsonObject.getObject(PROPERTIES);
+            if (propertiesObject != null && propertiesObject.getType() == JsonType.OBJECT) {
+                for (String key : propertiesObject.keys()) {
+                    properties.put(key, propertiesObject.getString(key));
+                }
+            }
+        } catch (Exception e) {
+            DomGlobal.console.debug(e);
+            DomGlobal.console.log("Invalid properties");
+        }
+        return properties;
+    }
+
     private NavTree navTreeForTemplates(List<LayoutTemplate> layoutTemplates) {
         var treeBuilder = new NavTreeBuilder();
         return buildLayoutTemplatesGroup(layoutTemplates, treeBuilder).build();

@@ -21,7 +21,7 @@
   <parent>
     <artifactId>kie-wb-common-stunner-client</artifactId>
     <groupId>org.kie.kogito.stunner.editors</groupId>
-    <version>0.0.0</version>
+    <version>${revision}</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
@@ -144,11 +144,6 @@
       <groupId>org.kie.kogito.stunner.editors</groupId>
       <artifactId>uberfire-commons-editor-client</artifactId>
       <scope>provided</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.kie.soup</groupId>
-      <artifactId>kie-soup-commons</artifactId>
     </dependency>
 
     <dependency>

@@ -16,19 +16,21 @@
 package org.kie.workbench.common.stunner.bpmn.definition;
 
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.validation.Valid;
 
 import org.jboss.errai.common.client.api.annotations.MapsTo;
 import org.jboss.errai.common.client.api.annotations.Portable;
 import org.jboss.errai.databinding.client.api.Bindable;
-import org.kie.soup.commons.util.Sets;
 import org.kie.workbench.common.forms.adf.definitions.annotations.FieldParam;
 import org.kie.workbench.common.forms.adf.definitions.annotations.FormDefinition;
 import org.kie.workbench.common.forms.adf.definitions.annotations.FormField;
 import org.kie.workbench.common.forms.adf.definitions.settings.FieldPolicy;
 import org.kie.workbench.common.stunner.bpmn.definition.property.background.BackgroundSet;
 import org.kie.workbench.common.stunner.bpmn.definition.property.cm.CaseManagementSet;
+import org.kie.workbench.common.stunner.bpmn.definition.property.collaboration.diagram.CollaborationSet;
 import org.kie.workbench.common.stunner.bpmn.definition.property.diagram.DiagramSet;
 import org.kie.workbench.common.stunner.bpmn.definition.property.dimensions.RectangleDimensionsSet;
 import org.kie.workbench.common.stunner.bpmn.definition.property.font.FontSet;
@@ -53,7 +55,10 @@ import static org.kie.workbench.common.forms.adf.engine.shared.formGeneration.pr
         policy = FieldPolicy.ONLY_MARKED,
         defaultFieldSettings = {@FieldParam(name = FIELD_CONTAINER_PARAM, value = COLLAPSIBLE_CONTAINER)}
 )
-public class BPMNDiagramImpl implements BPMNDiagram<DiagramSet, ProcessData, RootProcessAdvancedData> {
+public class BPMNDiagramImpl implements BPMNDiagram<DiagramSet,
+        ProcessData,
+        RootProcessAdvancedData,
+        CollaborationSet> {
 
     @Category
     public static final transient String category = BPMNCategories.CONTAINERS;
@@ -61,6 +66,7 @@ public class BPMNDiagramImpl implements BPMNDiagram<DiagramSet, ProcessData, Roo
     public static final String PROCESS_DATA = "processData";
     public static final String ADVANCED_DATA = "advancedData";
     public static final String CASE_MANAGEMENT_SET = "caseManagementSet";
+    public static final String COLLABORATION_SET = "collaborationSet";
 
     @Property
     @FormField
@@ -85,6 +91,12 @@ public class BPMNDiagramImpl implements BPMNDiagram<DiagramSet, ProcessData, Roo
     @FormField(
             afterElement = ADVANCED_DATA
     )
+    protected CollaborationSet collaborationSet;
+
+    @Property
+    @FormField(
+            afterElement = COLLABORATION_SET
+    )
     protected CaseManagementSet caseManagementSet;
 
     @Property
@@ -97,10 +109,9 @@ public class BPMNDiagramImpl implements BPMNDiagram<DiagramSet, ProcessData, Roo
     protected RectangleDimensionsSet dimensionsSet;
 
     @Labels
-    private final Set<String> labels = new Sets.Builder<String>()
-            .add("canContainArtifacts")
-            .add("diagram")
-            .build();
+    private final Set<String> labels = Stream.of("canContainArtifacts",
+                                                 "diagram")
+            .collect(Collectors.toSet());
 
     public static final Double WIDTH = 950d;
     public static final Double HEIGHT = 950d;
@@ -111,9 +122,9 @@ public class BPMNDiagramImpl implements BPMNDiagram<DiagramSet, ProcessData, Roo
              new CaseManagementSet(),
              new BackgroundSet(),
              new FontSet(),
-             new RectangleDimensionsSet(WIDTH,
-                                        HEIGHT),
-             new RootProcessAdvancedData());
+             new RectangleDimensionsSet(WIDTH, HEIGHT),
+             new RootProcessAdvancedData(),
+             new CollaborationSet());
     }
 
     public BPMNDiagramImpl(final @MapsTo(DIAGRAM_SET) DiagramSet diagramSet,
@@ -122,7 +133,8 @@ public class BPMNDiagramImpl implements BPMNDiagram<DiagramSet, ProcessData, Roo
                            final @MapsTo("backgroundSet") BackgroundSet backgroundSet,
                            final @MapsTo("fontSet") FontSet fontSet,
                            final @MapsTo("dimensionsSet") RectangleDimensionsSet dimensionsSet,
-                           final @MapsTo(ADVANCED_DATA) RootProcessAdvancedData advancedData) {
+                           final @MapsTo(ADVANCED_DATA) RootProcessAdvancedData advancedData,
+                           final @MapsTo(COLLABORATION_SET) CollaborationSet collaborationSet) {
         this.diagramSet = diagramSet;
         this.processData = processData;
         this.caseManagementSet = caseManagementSet;
@@ -130,6 +142,7 @@ public class BPMNDiagramImpl implements BPMNDiagram<DiagramSet, ProcessData, Roo
         this.fontSet = fontSet;
         this.dimensionsSet = dimensionsSet;
         this.advancedData = advancedData;
+        this.collaborationSet = collaborationSet;
     }
 
     public String getCategory() {
@@ -214,6 +227,16 @@ public class BPMNDiagramImpl implements BPMNDiagram<DiagramSet, ProcessData, Roo
     }
 
     @Override
+    public CollaborationSet getCollaborationSet() {
+        return collaborationSet;
+    }
+
+    @Override
+    public void setCollaborationSet(CollaborationSet collaborationSet) {
+        this.collaborationSet = collaborationSet;
+    }
+
+    @Override
     public int hashCode() {
         return HashUtil.combineHashCodes(diagramSet.hashCode(),
                                          processData.hashCode(),
@@ -221,7 +244,8 @@ public class BPMNDiagramImpl implements BPMNDiagram<DiagramSet, ProcessData, Roo
                                          backgroundSet.hashCode(),
                                          fontSet.hashCode(),
                                          dimensionsSet.hashCode(),
-                                         advancedData.hashCode());
+                                         advancedData.hashCode(),
+                                         collaborationSet.hashCode());
     }
 
     @Override
@@ -234,7 +258,8 @@ public class BPMNDiagramImpl implements BPMNDiagram<DiagramSet, ProcessData, Roo
                     backgroundSet.equals(other.backgroundSet) &&
                     fontSet.equals(other.fontSet) &&
                     dimensionsSet.equals(other.dimensionsSet) &&
-                    advancedData.equals(other.advancedData);
+                    advancedData.equals(other.advancedData) &&
+                    collaborationSet.equals(other.collaborationSet);
         }
         return false;
     }

@@ -16,33 +16,44 @@
 
 import * as React from "react";
 import { useState } from "react";
-import {
-  Dropdown,
-  DropdownGroup,
-  DropdownItem,
-  DropdownPosition,
-  DropdownToggle,
-} from "@patternfly/react-core/dist/js/components/Dropdown";
+import { DropdownGroup, DropdownItem, DropdownPosition } from "@patternfly/react-core/dist/js/components/Dropdown";
 import { TrashIcon } from "@patternfly/react-icons/dist/js/icons/trash-icon";
+import { ResponsiveDropdown } from "../ResponsiveDropdown/ResponsiveDropdown";
+import { ResponsiveDropdownToggle } from "../ResponsiveDropdown/ResponsiveDropdownToggle";
 
-export function DeleteDropdownWithConfirmation(props: { onDelete: () => void; item: React.ReactNode }) {
+export function DeleteDropdownWithConfirmation(
+  props: {
+    onDelete: () => void;
+    item: React.ReactNode;
+    label?: string;
+    isHoverable?: boolean;
+  } = { onDelete: () => {}, item: <></>, isHoverable: true }
+) {
   const [isDeleteDropdownOpen, setDeleteDropdownOpen] = useState(false);
   return (
-    <Dropdown
+    <ResponsiveDropdown
       onClick={(e) => e.stopPropagation()}
-      className={"kie-tools--masthead-hoverable"}
+      className={props.isHoverable ? "kie-tools--masthead-hoverable" : ""}
       onSelect={() => setDeleteDropdownOpen(false)}
+      onClose={() => setDeleteDropdownOpen(false)}
       isOpen={isDeleteDropdownOpen}
       isPlain={true}
       position={DropdownPosition.right}
       toggle={
-        <DropdownToggle toggleIndicator={null} onToggle={setDeleteDropdownOpen} onClick={(e) => e.stopPropagation()}>
-          <TrashIcon />
-        </DropdownToggle>
+        <ResponsiveDropdownToggle
+          icon={<TrashIcon />}
+          toggleIndicator={null}
+          onToggle={() => setDeleteDropdownOpen((prev) => !prev)}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {props.label}
+        </ResponsiveDropdownToggle>
       }
       dropdownItems={[
         <DropdownGroup label={"Are you sure?"} key="confirm-delete">
-          <DropdownItem onClick={props.onDelete}>{props.item}</DropdownItem>
+          <DropdownItem tabIndex={1} onClick={props.onDelete}>
+            {props.item}
+          </DropdownItem>
         </DropdownGroup>,
       ]}
     />

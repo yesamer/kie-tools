@@ -16,8 +16,6 @@
 
 package org.dashbuilder.client.screens;
 
-import java.util.Optional;
-
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
@@ -27,13 +25,13 @@ import elemental2.dom.DomGlobal;
 import org.dashbuilder.client.RuntimeClientLoader;
 import org.dashbuilder.client.RuntimeCommunication;
 import org.dashbuilder.client.navbar.AppNavBar;
+import org.dashbuilder.client.perspective.ContentErrorPerspective;
 import org.dashbuilder.client.perspective.DashboardsListPerspective;
 import org.dashbuilder.client.perspective.EmptyPerspective;
 import org.dashbuilder.client.perspective.RuntimePerspective;
 import org.dashbuilder.client.resources.i18n.AppConstants;
 import org.dashbuilder.shared.event.UpdatedRuntimeModelEvent;
 import org.dashbuilder.shared.model.DashbuilderRuntimeMode;
-import org.dashbuilder.shared.model.RuntimeModel;
 import org.dashbuilder.shared.model.RuntimeServiceResponse;
 import org.uberfire.client.annotations.WorkbenchPartTitle;
 import org.uberfire.client.annotations.WorkbenchPartView;
@@ -69,6 +67,9 @@ public class RouterScreen {
     DashboardsListScreen dashboardsListScreen;
 
     @Inject
+    ContentErrorScreen contentErrorScreen;
+
+    @Inject
     RuntimeCommunication runtimeCommunication;
 
     @Inject
@@ -99,31 +100,25 @@ public class RouterScreen {
 
     public void doRoute() {
         clientLoader.load(this::route,
-                          (a, t) -> {
-                              runtimeCommunication.showWarning(i18n.errorLoadingBackend(), t);
-                              placeManager.goTo(EmptyPerspective.ID);
-                          });
+                (a, t) -> {
+                    appNavBar.setHide(true);
+                    placeManager.goTo(EmptyPerspective.ID);
+                });
     }
 
     protected void route(RuntimeServiceResponse response) {
-        this.mode = response.getMode();
-        Optional<RuntimeModel> runtimeModelOp = response.getRuntimeModelOp();
-
-        if (mode == DashbuilderRuntimeMode.MULTIPLE_IMPORT) {
-            appNavBar.setDashboardListEnabled(true);
-            appNavBar.setup();
-        }
+        mode = response.getMode();
+        var runtimeModelOp = response.getRuntimeModelOp();
+        appNavBar.setHide(true);
 
         if (runtimeModelOp.isPresent()) {
-            RuntimeModel runtimeModel = runtimeModelOp.get();
-            appNavBar.setDisplayMainMenu(true);
+            var runtimeModel = runtimeModelOp.get();
+            var layoutTemplates = runtimeModel.getLayoutTemplates();
             placeManager.goTo(RuntimePerspective.ID);
             runtimeScreen.loadDashboards(runtimeModel);
-            runtimeScreen.goToIndex(runtimeModel.getLayoutTemplates());
+            runtimeScreen.goToIndex(layoutTemplates);
             return;
         }
-        
-        appNavBar.setDisplayMainMenu(false);
 
         if (response.getAvailableModels().isEmpty()) {
             placeManager.goTo(EmptyPerspective.ID);
@@ -133,7 +128,7 @@ public class RouterScreen {
         if (!response.isAllowUpload()) {
             dashboardsListScreen.disableUpload();
         }
-        
+
         runtimeScreen.clearCurrentSelection();
         dashboardsListScreen.loadList(response.getAvailableModels());
         placeManager.goTo(DashboardsListPerspective.ID);
@@ -149,25 +144,30 @@ public class RouterScreen {
 
     public void loadDashboard(String importId) {
         String newUrl = GWT.getHostPageBaseURL() + "?" +
-                        RuntimeClientLoader.IMPORT_ID_PARAM + "=" +
-                        importId;
+                RuntimeClientLoader.IMPORT_ID_PARAM + "=" +
+                importId;
         DomGlobal.window.history.replaceState(null,
-                                              "Dashbuilder Runtime |" + importId,
-                                              newUrl);
+                "Dashbuilder Runtime |" + importId,
+                newUrl);
         doRoute();
     }
 
     public void listDashboards() {
         DomGlobal.window.history.replaceState(null,
-                                              "Dashbuilder Runtime",
-                                              GWT.getHostPageBaseURL());
+                "Dashbuilder Runtime",
+                GWT.getHostPageBaseURL());
         doRoute();
+    }
+
+    public void goToContentError(Throwable contentException) {
+        contentErrorScreen.showContentError(contentException.getMessage());
+        placeManager.goTo(ContentErrorPerspective.ID);
     }
 
     public void onUpdatedRuntimeModelEvent(@Observes UpdatedRuntimeModelEvent updatedRuntimeModelEvent) {
         String updatedModel = updatedRuntimeModelEvent.getRuntimeModelId();
 
-        if (updatedModel.equals(clientLoader.getImportId())) {
+        if (updatedModel.equals(clientLoader.getImportId()) || clientLoader.isEditor()) {
             doRoute();
             runtimeScreen.setKeepHistory(true);
         }

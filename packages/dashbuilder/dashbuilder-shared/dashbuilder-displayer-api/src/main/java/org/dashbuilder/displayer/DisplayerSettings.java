@@ -44,7 +44,7 @@ public class DisplayerSettings {
         this();
         setType(displayerType);
     }
-    
+
     public DisplayerSettings(DisplayerType displayerType, DisplayerSubType subType) {
         this(displayerType);
         setSubtype(subType);
@@ -271,8 +271,12 @@ public class DisplayerSettings {
     }
 
     public DisplayerType getType() {
-        String strType = settings.get(getSettingPath(DisplayerAttributeDef.TYPE));
+        var strType = settings.get(getSettingPath(DisplayerAttributeDef.TYPE));
         return DisplayerType.getByName(strType);
+    }
+
+    public String getTypeString() {
+        return settings.get(getSettingPath(DisplayerAttributeDef.TYPE));
     }
 
     public void setType(DisplayerType displayerType) {
@@ -316,7 +320,8 @@ public class DisplayerSettings {
     }
 
     public boolean isCSVExportAllowed() {
-        return parseBoolean(settings.get(getSettingPath(DisplayerAttributeDef.ALLOW_EXPORT_CSV))) || parseBoolean(settings.get(getSettingPath(DisplayerAttributeDef.EXPORT_TO_CSV)));
+        return parseBoolean(settings.get(getSettingPath(DisplayerAttributeDef.ALLOW_EXPORT_CSV))) || parseBoolean(
+                settings.get(getSettingPath(DisplayerAttributeDef.EXPORT_TO_CSV)));
     }
 
     public void setCSVExportAllowed(boolean csvExportAllowed) {
@@ -324,7 +329,8 @@ public class DisplayerSettings {
     }
 
     public boolean isExcelExportAllowed() {
-        return parseBoolean(settings.get(getSettingPath(DisplayerAttributeDef.ALLOW_EXPORT_EXCEL))) || parseBoolean(settings.get(getSettingPath(DisplayerAttributeDef.EXPORT_TO_XLS)));
+        return parseBoolean(settings.get(getSettingPath(DisplayerAttributeDef.ALLOW_EXPORT_EXCEL))) || parseBoolean(
+                settings.get(getSettingPath(DisplayerAttributeDef.EXPORT_TO_XLS)));
     }
 
     public void setExcelExportAllowed(boolean excelExportAllowed) {
@@ -360,7 +366,8 @@ public class DisplayerSettings {
     }
 
     public void setFilterSelfApplyEnabled(boolean filterSelfApplyEnabled) {
-        settings.put(getSettingPath(DisplayerAttributeDef.FILTER_SELFAPPLY_ENABLED), Boolean.toString(filterSelfApplyEnabled));
+        settings.put(getSettingPath(DisplayerAttributeDef.FILTER_SELFAPPLY_ENABLED), Boolean.toString(
+                filterSelfApplyEnabled));
     }
 
     public boolean isFilterNotificationEnabled() {
@@ -368,7 +375,8 @@ public class DisplayerSettings {
     }
 
     public void setFilterNotificationEnabled(boolean filterNotificationEnabled) {
-        settings.put(getSettingPath(DisplayerAttributeDef.FILTER_NOTIFICATION_ENABLED), Boolean.toString(filterNotificationEnabled));
+        settings.put(getSettingPath(DisplayerAttributeDef.FILTER_NOTIFICATION_ENABLED), Boolean.toString(
+                filterNotificationEnabled));
     }
 
     public boolean isFilterListeningEnabled() {
@@ -376,7 +384,8 @@ public class DisplayerSettings {
     }
 
     public void setFilterListeningEnabled(boolean filterListeningEnabled) {
-        settings.put(getSettingPath(DisplayerAttributeDef.FILTER_LISTENING_ENABLED), Boolean.toString(filterListeningEnabled));
+        settings.put(getSettingPath(DisplayerAttributeDef.FILTER_LISTENING_ENABLED), Boolean.toString(
+                filterListeningEnabled));
     }
 
     public int getSelectorWidth() {
@@ -483,6 +492,18 @@ public class DisplayerSettings {
         return parseBoolean(settings.get(getSettingPath(DisplayerAttributeDef.CHART_RESIZABLE)));
     }
 
+    public boolean isZoomEnabled() {
+        return parseBoolean(settings.get(getSettingPath(DisplayerAttributeDef.ZOOM_ENABLED)));
+    }
+
+    public boolean isGridXOn(boolean defaultValue) {
+        return parseBoolean(settings.get(getSettingPath(DisplayerAttributeDef.CHART_GRIDX)), defaultValue);
+    }
+
+    public boolean isGridYOn(boolean defaultValue) {
+        return parseBoolean(settings.get(getSettingPath(DisplayerAttributeDef.CHART_GRIDY)), defaultValue);
+    }
+
     public boolean isChartShowLegend() {
         return parseBoolean(settings.get(getSettingPath(DisplayerAttributeDef.CHART_SHOWLEGEND)));
     }
@@ -527,7 +548,8 @@ public class DisplayerSettings {
     }
 
     public void setTableColumnPickerEnabled(boolean tableColumnPickerEnabled) {
-        settings.put(getSettingPath(DisplayerAttributeDef.TABLE_COLUMN_PICKER_ENABLED), Boolean.toString(tableColumnPickerEnabled));
+        settings.put(getSettingPath(DisplayerAttributeDef.TABLE_COLUMN_PICKER_ENABLED), Boolean.toString(
+                tableColumnPickerEnabled));
     }
 
     public String getTableDefaultSortColumnId() {
@@ -675,24 +697,34 @@ public class DisplayerSettings {
     }
 
     public String getComponentId() {
+        var legacyComponentId = settings.get(getSettingPath(DisplayerAttributeDef.EXTERNAL_COMPONENT_ID_DEPRECATED));
+        if (legacyComponentId != null) {
+            return legacyComponentId;
+        }
         return settings.get(getSettingPath(DisplayerAttributeDef.EXTERNAL_COMPONENT_ID));
     }
 
     public String setComponentId(String componentId) {
-        return settings.put(getSettingPath(DisplayerAttributeDef.EXTERNAL_COMPONENT_ID), componentId);
+        return settings.put(getSettingPath(DisplayerAttributeDef.EXTERNAL_COMPONENT_ID_DEPRECATED), componentId);
     }
-    
-    
+
     public String getComponentWidth() {
+        var legacyWidth = settings.get(getSettingPath(DisplayerAttributeDef.EXTERNAL_COMPONENT_WIDTH_DEPRECATED));
+        if (legacyWidth != null) {
+            return parseString(legacyWidth);
+        }
         return parseString(settings.get(getSettingPath(DisplayerAttributeDef.EXTERNAL_COMPONENT_WIDTH)));
     }
 
     public String setComponentWidth(String width) {
         return settings.put(getSettingPath(DisplayerAttributeDef.EXTERNAL_COMPONENT_WIDTH), width);
     }
-    
-    
+
     public String getComponentHeight() {
+        var legacyHeight = settings.get(getSettingPath(DisplayerAttributeDef.EXTERNAL_COMPONENT_HEIGHT_DEPRECATED));
+        if (legacyHeight != null) {
+            return parseString(legacyHeight);
+        }
         return parseString(settings.get(getSettingPath(DisplayerAttributeDef.EXTERNAL_COMPONENT_HEIGHT)));
     }
 
@@ -723,13 +755,17 @@ public class DisplayerSettings {
             return Collections.emptyMap();
         }
         return settings.entrySet()
-                       .stream()
-                       .filter(e -> e.getKey().startsWith(componentId))
-                       .collect(Collectors.toMap(e -> removeComponentPrefix(componentId, e.getKey()), Map.Entry::getValue));
+                .stream()
+                .filter(e -> e.getKey().startsWith(componentId))
+                .collect(Collectors.toMap(e -> removeComponentPrefix(componentId, e.getKey()), Map.Entry::getValue));
     }
 
     public String getComponentPartition() {
         return settings.get(getSettingPath(DisplayerAttributeDef.EXTERNAL_COMPONENT_PARTITION));
+    }
+
+    public String getComponentBaseUrl() {
+        return settings.get(getSettingPath(DisplayerAttributeDef.EXTERNAL_COMPONENT_BASE_URL));
     }
 
     public String setComponentPartition(String componentPartition) {

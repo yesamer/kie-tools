@@ -213,8 +213,9 @@ public class AssignmentData {
         return getStringForList(processVariables);
     }
 
-    public void setProcessVariables(final String sProcessVariables) {
+    public void setProcessVariables(String sProcessVariables) {
         processVariables.clear();
+        sProcessVariables = StringUtils.preFilterVariablesForGenerics(sProcessVariables);
         if (sProcessVariables != null && !sProcessVariables.isEmpty()) {
             HashSet<String> procVarNames = new HashSet<String>();
             String[] processVars = sProcessVariables.split(",");
@@ -245,7 +246,7 @@ public class AssignmentData {
     public void setAssignments(final String sAssignments) {
         assignments.clear();
         if (sAssignments != null && !sAssignments.isEmpty()) {
-            String[] as = sAssignments.split(",");
+            String[] as = sAssignments.split(",(?=\\[din])|,(?=\\[dout])");
             for (String a : as) {
                 if (!a.isEmpty()) {
                     Assignment ass = Assignment.deserialize(this,

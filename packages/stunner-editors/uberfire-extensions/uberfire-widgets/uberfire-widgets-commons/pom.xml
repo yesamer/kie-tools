@@ -22,7 +22,7 @@
   <parent>
     <groupId>org.kie.kogito.stunner.editors</groupId>
     <artifactId>uberfire-widgets</artifactId>
-    <version>0.0.0</version>
+    <version>${revision}</version>
   </parent>
 
   <artifactId>uberfire-widgets-commons</artifactId>
@@ -41,11 +41,6 @@
     <dependency>
       <groupId>org.kie.kogito.stunner.editors</groupId>
       <artifactId>uberfire-client-api</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.kie.soup</groupId>
-      <artifactId>kie-soup-commons</artifactId>
     </dependency>
 
     <dependency>

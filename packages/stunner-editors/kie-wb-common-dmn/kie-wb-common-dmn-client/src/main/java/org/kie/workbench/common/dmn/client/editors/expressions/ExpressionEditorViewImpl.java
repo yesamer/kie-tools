@@ -100,6 +100,7 @@ import org.kie.workbench.common.stunner.core.client.command.SessionCommandManage
 import org.kie.workbench.common.stunner.core.command.impl.CompositeCommand;
 import org.kie.workbench.common.stunner.core.domainobject.DomainObject;
 import org.kie.workbench.common.stunner.core.util.DefinitionUtils;
+import org.kie.workbench.common.stunner.forms.client.event.FormFieldChanged;
 import org.kie.workbench.common.stunner.forms.client.event.RefreshFormPropertiesEvent;
 import org.uberfire.ext.wires.core.grids.client.widget.grid.impl.BaseGridWidgetKeyboardHandler;
 import org.uberfire.ext.wires.core.grids.client.widget.grid.impl.KeyboardOperation;
@@ -318,6 +319,11 @@ public class ExpressionEditorViewImpl implements ExpressionEditorView {
     }
 
     @Override
+    public void disableBetaBoxedExpressionToggle() {
+        betaBoxedExpressionToggle.classList.toggle("hidden", true);
+    }
+
+    @Override
     public void setReturnToLinkText(final String text) {
         returnToLink.textContent = translationService.format(DMNEditorConstants.ExpressionEditor_ReturnToLink, text);
     }
@@ -355,6 +361,10 @@ public class ExpressionEditorViewImpl implements ExpressionEditorView {
                                                                 expression.isPresent() ?
                                                                         expressionTypeText :
                                                                         "<" + expressionTypeText + ">"));
+    }
+
+    public void onPropertiesPanelFormFieldChanged(@Observes FormFieldChanged event) {
+        reloadIfIsNewEditor();
     }
 
     @EventHandler("try-it")

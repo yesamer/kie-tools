@@ -22,6 +22,7 @@ import { I18nService } from "@kie-tools-core/i18n/dist/envelope";
 import { ChannelType, KogitoEditorChannelApi } from "@kie-tools-core/editor/dist/api";
 import { GwtEditorWrapper } from "@kie-tools/kie-bc-editors/dist/common/GwtEditorWrapper";
 import { MessageBusClientApi } from "@kie-tools-core/envelope-bus/dist/api";
+import { XmlFormatter } from "@kie-tools/kie-bc-editors/dist/common/XmlFormatter";
 
 const cssResource: Resource = {
   type: "css",
@@ -50,11 +51,6 @@ const jsResource: Resource = {
 };
 
 const xmlFormatter = { format: (c: string) => c };
-
-const gwtAppFormerApi = {
-  onFinishedLoading: (callback: () => Promise<any>) => (window.appFormerGwtFinishedLoading = callback),
-  getEditor: jest.fn(),
-};
 
 function waitForNScriptsToLoad(remaining: number) {
   if (remaining <= 0) {
@@ -86,16 +82,19 @@ describe("GwtEditorWrapperFactory", () => {
       (self) => {
         return new GwtEditorWrapper(
           testLanguageData.editorId,
-          self.gwtAppFormerApi.getEditor(testLanguageData.editorId),
+          self.gwtAppFormerConsumedInteropApi.getEditor(testLanguageData.editorId),
           channelApiMock,
-          self.xmlFormatter,
+          new XmlFormatter(),
           self.gwtStateControlService,
           self.kieBcEditorsI18n
         );
       },
       { shouldLoadResourcesDynamically: true },
       xmlFormatter,
-      gwtAppFormerApi,
+      {
+        onFinishedLoading: (callback: () => Promise<any>) => (window.appFormerGwtFinishedLoading = callback),
+        getEditor: jest.fn(),
+      },
       new GwtStateControlService()
     );
 

@@ -21,7 +21,7 @@
   <parent>
     <groupId>org.kie.kogito.stunner.editors</groupId>
     <artifactId>uberfire-workbench</artifactId>
-    <version>0.0.0</version>
+    <version>${revision}</version>
   </parent>
 
   <artifactId>uberfire-workbench-client-views-patternfly</artifactId>
@@ -147,13 +147,6 @@
       <groupId>org.kie.kogito.stunner.editors</groupId>
       <artifactId>appformer-js-monaco</artifactId>
       <scope>provided</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.kie.soup</groupId>
-      <artifactId>kie-soup-commons</artifactId>
-      <classifier>sources</classifier>
-      <scope>test</scope>
     </dependency>
 
     <dependency>

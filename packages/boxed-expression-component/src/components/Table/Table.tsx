@@ -16,7 +16,7 @@
 
 import * as _ from "lodash";
 import * as React from "react";
-import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Column,
   ColumnInstance,
@@ -30,8 +30,22 @@ import {
 import { TableComposable } from "@patternfly/react-table";
 import { v4 as uuid } from "uuid";
 import { generateUuid, TableHeaderVisibility, TableOperation, TableProps } from "../../api";
-import { BoxedExpressionGlobalContext, useBoxedExpression } from "../../context";
-import { PASTE_OPERATION, pasteOnTable } from "./common";
+import { useBoxedExpression } from "../../context";
+import {
+  focusCurrentCell,
+  focusInsideCell,
+  focusLowerCell,
+  focusNextCellByArrowKey,
+  focusNextCellByTabKey,
+  focusParentCell,
+  focusPrevCellByArrowKey,
+  focusPrevCellByTabKey,
+  focusUpperCell,
+  getParentCell,
+  pasteOnTable,
+  PASTE_OPERATION,
+} from "./common";
+import { NavigationKeysUtils } from "../common";
 import { EditableCell } from "./EditableCell";
 import "./Table.css";
 import { TableBody } from "./TableBody";
@@ -64,6 +78,48 @@ export const getColumnSearchPredicate: (column: ColumnInstance) => (columnToComp
   };
 };
 
+/**
+ * Callback fired during arrow navigation.
+ *
+ * @param e the event object
+ * @param rowSpan the cell rowSpan, default is 1
+ * @returns
+ */
+const onCellTabNavigation = (e: KeyboardEvent, rowSpan = 1) => {
+  const currentTarget = e.currentTarget as HTMLElement;
+  e.preventDefault();
+
+  if (e.shiftKey) {
+    return focusPrevCellByTabKey(currentTarget, rowSpan);
+  } else {
+    return focusNextCellByTabKey(currentTarget, rowSpan);
+  }
+};
+
+/**
+ * Callback fired during arrow navigation.
+ *
+ * @param e the event object
+ * @param rowSpan the cell rowSpan, default is 1
+ * @returns
+ */
+const onCellArrowNavigation = (e: KeyboardEvent, rowSpan = 1): void => {
+  const key = e.key;
+  const currentTarget = e.currentTarget as HTMLElement;
+
+  if (NavigationKeysUtils.isArrowLeft(key)) {
+    return focusPrevCellByArrowKey(currentTarget, rowSpan);
+  }
+  if (NavigationKeysUtils.isArrowRight(key)) {
+    return focusNextCellByArrowKey(currentTarget, rowSpan);
+  }
+  if (NavigationKeysUtils.isArrowUp(key)) {
+    return focusUpperCell(currentTarget);
+  }
+
+  return focusLowerCell(currentTarget);
+};
+
 export const Table: React.FunctionComponent<TableProps> = ({
   tableId,
   children,
@@ -85,6 +141,7 @@ export const Table: React.FunctionComponent<TableProps> = ({
   getColumnKey,
   resetRowCustomFunction,
   readOnlyCells = false,
+  enableKeyboarNavigation = true,
 }: TableProps) => {
   const tableRef = useRef<HTMLTableElement>(null);
   const tableEventUUID = useMemo(() => `table-event-${uuid()}`, []);
@@ -97,8 +154,6 @@ export const Table: React.FunctionComponent<TableProps> = ({
     (groupType?: string) => (getColumnPrefix ? getColumnPrefix(groupType) : "column-"),
     [getColumnPrefix]
   );
-
-  const globalContext = useContext(BoxedExpressionGlobalContext);
 
   const generateNumberOfRowsSubColumnRecursively: (column: ColumnInstance, headerLevels: number) => void = useCallback(
     (column, headerLevels) => {
@@ -245,12 +300,13 @@ export const Table: React.FunctionComponent<TableProps> = ({
   const tableHandlerStateUpdate = useCallback(
     (target: HTMLElement, column: ColumnInstance) => {
       setTableHandlerTarget(target);
-      globalContext.currentlyOpenedHandlerCallback?.(false);
+      boxedExpression.currentlyOpenedHandlerCallback?.(false);
       setShowTableHandler(true);
-      globalContext.setCurrentlyOpenedHandlerCallback?.(() => setShowTableHandler);
+      boxedExpression.setIsContextMenuOpen(true);
+      boxedExpression.setCurrentlyOpenedHandlerCallback?.(() => setShowTableHandler);
       setLastSelectedColumn(column);
     },
-    [globalContext]
+    [boxedExpression]
   );
 
   const getColumnOperations = useCallback(
@@ -334,6 +390,8 @@ export const Table: React.FunctionComponent<TableProps> = ({
           ]);
           tableHandlerStateUpdate(target, getColumnsAtLastLevel(tableColumns, headerLevels)[columnIndex]);
           setLastSelectedRowIndex(rowIndex);
+
+          focusCurrentCell(target);
         }
       },
     }),
@@ -353,8 +411,9 @@ export const Table: React.FunctionComponent<TableProps> = ({
   );
 
   const onGetColumnKey = useCallback(
-    (column: Column) => {
-      return getColumnKey ? getColumnKey(column) : column.id!;
+    (column: ColumnInstance) => {
+      const columnId = column.originalId || column.id;
+      return getColumnKey ? getColumnKey(column) : columnId;
     },
     [getColumnKey]
   );
@@ -373,6 +432,60 @@ export const Table: React.FunctionComponent<TableProps> = ({
     [getRowKey]
   );
 
+  /**
+   * Function to be executed when a key has been pressed on a cell
+   * @param rowIndex the index of the row
+   */
+  const onCellKeyDown = useCallback(
+    (rowSpan = 1) =>
+      (e: KeyboardEvent) => {
+        const key = e.key;
+        const isModKey = e.altKey || e.ctrlKey || e.shiftKey || NavigationKeysUtils.isAltGraph(key);
+        const currentTarget = e.currentTarget as HTMLElement;
+        const isFiredFromThis = e.currentTarget === e.target;
+
+        if (!enableKeyboarNavigation) {
+          return;
+        }
+
+        //prevent the parent cell catch this event if there is a nested table
+        if (e.currentTarget !== getParentCell(e.target as HTMLElement)) {
+          return;
+        }
+
+        if (boxedExpression.isContextMenuOpen) {
+          e.preventDefault();
+          if (NavigationKeysUtils.isEscape(key)) {
+            //close Select child components if any
+            focusCurrentCell(currentTarget);
+          }
+          return;
+        }
+
+        if (NavigationKeysUtils.isTab(key)) {
+          return onCellTabNavigation(e, rowSpan);
+        }
+
+        if (NavigationKeysUtils.isAnyArrow(key)) {
+          return onCellArrowNavigation(e, rowSpan);
+        }
+
+        if (NavigationKeysUtils.isEscape(key)) {
+          return focusParentCell(currentTarget);
+        }
+
+        if (
+          !boxedExpression.isContextMenuOpen &&
+          isFiredFromThis &&
+          !isModKey &&
+          NavigationKeysUtils.isTypingKey(key)
+        ) {
+          return focusInsideCell(currentTarget, !NavigationKeysUtils.isEnter(key));
+        }
+      },
+    [boxedExpression.isContextMenuOpen, enableKeyboarNavigation]
+  );
+
   return (
     <div className={`table-component ${tableId} ${tableEventUUID}`}>
       <TableComposable
@@ -382,22 +495,25 @@ export const Table: React.FunctionComponent<TableProps> = ({
         ouiaId="expression-grid-table"
       >
         <TableHeader
-          tableInstance={tableInstance}
           editColumnLabel={editColumnLabel}
+          editableHeader={editableHeader}
+          getColumnKey={onGetColumnKey}
           headerVisibility={headerVisibility}
+          onCellKeyDown={onCellKeyDown}
+          onColumnsUpdate={onColumnsUpdateCallback}
           skipLastHeaderGroup={skipLastHeaderGroup}
           tableColumns={tableColumns}
-          getColumnKey={onGetColumnKey}
-          onColumnsUpdate={onColumnsUpdateCallback}
+          tableInstance={tableInstance}
           thProps={thProps}
-          editableHeader={editableHeader}
         />
         <TableBody
-          tableInstance={tableInstance}
-          getRowKey={onGetRowKey}
           getColumnKey={onGetColumnKey}
-          onColumnsUpdate={onColumnsUpdateCallback}
+          getRowKey={onGetRowKey}
           headerVisibility={headerVisibility}
+          onCellKeyDown={onCellKeyDown}
+          onColumnsUpdate={onColumnsUpdateCallback}
+          skipLastHeaderGroup={skipLastHeaderGroup}
+          tableInstance={tableInstance}
           tdProps={tdProps}
         >
           {children}

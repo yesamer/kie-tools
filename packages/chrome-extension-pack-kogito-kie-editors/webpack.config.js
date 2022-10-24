@@ -22,8 +22,9 @@ const { merge } = require("webpack-merge");
 const common = require("@kie-tools-core/webpack-base/webpack.common.config");
 const stunnerEditors = require("@kie-tools/stunner-editors");
 const { EnvironmentPlugin } = require("webpack");
-const buildEnv = require("@kie-tools/build-env");
 const path = require("path");
+const { env } = require("./env");
+const buildEnv = env;
 
 function getRouterArgs() {
   const targetOrigin = buildEnv.chromeExtension.routerTargetOrigin;
@@ -73,6 +74,7 @@ module.exports = async (env) => {
         patterns: [
           { from: "./static", to: "." },
           { from: `./${manifestFile}`, to: "./manifest.json" },
+          { from: `./rules.json`, to: "./rules.json" },
 
           // These are used for development only.
           { from: stunnerEditors.dmnEditorPath(), to: "dmn", globOptions: { ignore: ["WEB-INF/**/*"] } },
@@ -82,7 +84,7 @@ module.exports = async (env) => {
       }),
       new ZipPlugin({
         filename: "chrome_extension_kogito_kie_editors_" + packageJson.version + ".zip",
-        include: ["manifest.json", "background.js", "content_scripts", "resources"],
+        include: ["manifest.json", "background.js", "content_scripts", "resources", "scripts", "rules.json"],
       }),
     ],
     module: {

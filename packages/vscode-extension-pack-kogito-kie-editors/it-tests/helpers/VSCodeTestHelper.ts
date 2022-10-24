@@ -126,17 +126,12 @@ export default class VSCodeTestHelper {
     } else {
       const pathPieces = fileParentPath.split("/");
       const viewItem = await this.workspaceSectionView.openItem(...pathPieces);
-      // For some reason openItem() collapses the view it expands so we
-      // click on src to reexpand the tree and click on desired item
-      const srcItem = await this.workspaceSectionView.findItem(this.SRC_ROOT);
-      if (srcItem != undefined) {
-        await srcItem.click();
-      }
       const fileItem = await this.workspaceSectionView.findItem(fileName);
       if (fileItem != undefined) {
         await fileItem.click();
       }
     }
+    await sleep(3000);
 
     const webview = new WebView(this.workbench.getEditorView(), By.linkText(fileName));
     await this.waitUntilKogitoEditorIsLoaded(webview);
@@ -150,12 +145,16 @@ export default class VSCodeTestHelper {
   public closeAllEditors = async (): Promise<void> => {
     try {
       await this.workbench.getEditorView().closeAllEditors();
-    } catch (error) {
+    } catch (closingEditorsError) {
       // catch the error when there is nothing to close
       // or the Save Dialog appears
-      const dialog = new ModalDialog();
-      if (dialog != null && (await dialog.isDisplayed())) {
-        await dialog.pushButton("Don't Save");
+      try {
+        const dialog = new ModalDialog();
+        if (dialog != null && (await dialog.isDisplayed())) {
+          await dialog.pushButton("Don't Save");
+        }
+      } catch (noSaveDialogWhenClosingError) {
+        console.warn("WARN::Tests tried to locate non-existing save dialog.");
       }
     }
   };

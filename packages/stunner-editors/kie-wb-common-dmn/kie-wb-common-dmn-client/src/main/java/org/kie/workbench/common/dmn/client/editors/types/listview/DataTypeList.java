@@ -17,7 +17,6 @@
 package org.kie.workbench.common.dmn.client.editors.types.listview;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -125,11 +124,8 @@ public class DataTypeList {
         dndListComponent.setOnDropItem(getOnDropDataType());
     }
 
-    /**
-     * It activates the React Components in the DataTypeList Widget
-     */
-    public void activate() {
-        if (kogitoChannelHelper.isCurrentChannelEnabled(Arrays.asList(Channel.VSCODE, Channel.DEFAULT))) {
+    public void activateReactComponents() {
+        if (kogitoChannelHelper.isCurrentChannelEnabled(Channel.VSCODE_DESKTOP) || kogitoChannelHelper.isCurrentChannelEnabled(Channel.VSCODE_WEB)) {
             view.renderImportJavaClasses();
         }
     }
@@ -466,7 +462,6 @@ public class DataTypeList {
                 insertFields(newDataType, javaClass);
             }
         }
-
     }
 
     void renameJavaClassToDMNName(final List<JavaClass> javaClasses) {
@@ -494,9 +489,7 @@ public class DataTypeList {
                     field.setDmnTypeRef(renamedFieldType);
                 }
             }
-
         }
-
     }
 
     String buildName(final String nameCandidate, final Map<String, Integer> namesCount) {

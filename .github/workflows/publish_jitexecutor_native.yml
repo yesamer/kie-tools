@@ -6,9 +6,13 @@ on:
       kogito_runtime_version:
         description: "Kogito Runtime version"
         required: true
-      version:
-        description: "Version"
+      npm_version:
+        description: "NPM Version"
         required: true
+  pull_request:
+    paths:
+      - ".github/supporting-files/publish_jitexecutor_native"
+      - ".github/workflows/publish_jitexecutor_native.yml"
 
 jobs:
   build_jitexecutor_native_binaries:
@@ -16,30 +20,34 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-2016]
+        os: [ubuntu-latest, macos-latest, windows-latest]
 
     steps:
       - name: "Checkout kogito-apps"
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
-          fetch-depth: 0
           repository: kiegroup/kogito-apps
           ref: ${{ github.event.inputs.kogito_runtime_version }}
 
+      - name: "Set up Maven"
+        uses: stCarolas/setup-maven@417e1a9899611c0350621d1fb0c2770f35105c69
+        with:
+          maven-version: 3.8.6
+
       - name: "Set up JDK 11"
-        if: matrix.os != 'windows-2016'
+        if: runner.os != 'Windows'
         uses: actions/setup-java@v1
         with:
           java-version: "11"
 
       - name: "Set long paths for Windows"
-        if: matrix.os == 'windows-2016'
+        if: runner.os == 'Windows'
         run: git config --system core.longpaths true
 
       - name: "Build macOS"
-        if: matrix.os == 'macos-latest'
+        if: runner.os == 'macOS'
         run: |
-          brew install maven make && \
+          brew install make && \
           wget https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-21.3.0/graalvm-ce-java11-darwin-amd64-21.3.0.tar.gz && \
           tar -xzf graalvm-ce-java11-darwin-amd64-21.3.0.tar.gz && \
           sudo mv graalvm-ce-java11-21.3.0 /Library/Java/JavaVirtualMachines
@@ -49,43 +57,42 @@ jobs:
           mvn clean package -B -ntp -DskipTests -f ./jitexecutor && mvn clean package -B -ntp -DskipTests -Pnative -am -f ./jitexecutor
 
       - name: "Build Linux"
-        if: matrix.os == 'ubuntu-latest'
+        if: runner.os == 'Linux'
         run: |
           sudo apt update && \
           sudo apt install -y \
           build-essential \
-          maven \
           libgtk-3-dev \
           libappindicator3-dev \
           gir1.2-appindicator3-0.1 && \
           mvn clean package -B -ntp -DskipTests -f ./jitexecutor && mvn clean package -B -ntp -DskipTests -Pnative -am -f ./jitexecutor
 
       - name: "Configure Pagefile"
-        if: matrix.os == 'windows-2016'
-        uses: al-cheb/configure-pagefile-action@v1.2
+        if: runner.os == 'Windows'
+        uses: al-cheb/configure-pagefile-action@7e234852c937eea04d6ee627c599fb24a5bfffee
         with:
           minimum-size: 16GB
           maximum-size: 16GB
           disk-root: "C:"
 
       - name: "Setup MSCV"
-        if: matrix.os == 'windows-2016'
-        uses: ilammy/msvc-dev-cmd@v1.5.0
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@376515093de803c897e7e6d576553c3104267e17
 
       - name: "Setup MSBUILD"
-        if: matrix.os == 'windows-2016'
+        if: runner.os == 'Windows'
         uses: microsoft/setup-msbuild@v1
 
       - name: "Setup GraalVM"
-        if: matrix.os == 'windows-2016'
-        uses: ayltai/setup-graalvm@v1
+        if: runner.os == 'Windows'
+        uses: ayltai/setup-graalvm@3789c9412212eb6d435725e49d28e179a46b1aaa
         with:
           java-version: 11
           graalvm-version: 21.3.0
           native-image: true
 
       - name: "Build Windows"
-        if: matrix.os == 'windows-2016'
+        if: runner.os == 'Windows'
         shell: cmd
         run: |
           mvn clean package -B -ntp -DskipTests -f ./jitexecutor && mvn clean package -B -ntp -DskipTests -Pnative -am -f ./jitexecutor
@@ -98,12 +105,11 @@ jobs:
 
   pack_and_publish:
     runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
     needs: [build_jitexecutor_native_binaries]
     steps:
       - name: "Checkout kie-tools"
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
+        uses: actions/checkout@v3
 
       - name: "Download Windows binary"
         uses: actions/download-artifact@v2
@@ -131,6 +137,6 @@ jobs:
           mv ./dist/linux/jitexecutor-runner-${{ github.event.inputs.kogito_runtime_version }}-runner ./dist/linux/jitexecutor
           mv ./dist/darwin/jitexecutor-runner-${{ github.event.inputs.kogito_runtime_version }}-runner ./dist/darwin/jitexecutor
           mv ./dist/win32/jitexecutor-runner-${{ github.event.inputs.kogito_runtime_version }}-runner.exe ./dist/win32/jitexecutor.exe
-          npm version ${{ github.event.inputs.version }}
+          npm version ${{ github.event.inputs.npm_version }}
           echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
           npm publish --access public

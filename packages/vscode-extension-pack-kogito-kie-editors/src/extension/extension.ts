@@ -19,8 +19,8 @@ import { registerTestScenarioRunnerCommand, VsCodeBackendProxy } from "@kie-tool
 import { EditorEnvelopeLocator, EnvelopeMapping } from "@kie-tools-core/editor/dist/api";
 import { I18n } from "@kie-tools-core/i18n/dist/core";
 import * as KogitoVsCode from "@kie-tools-core/vscode-extension";
-import { VsCodeWorkspaceApi } from "@kie-tools-core/workspace/dist/vscode";
-import { VsCodeNotificationsApi } from "@kie-tools-core/notifications/dist/vscode";
+import { VsCodeWorkspaceChannelApiImpl } from "@kie-tools-core/workspace/dist/vscode";
+import { VsCodeNotificationsChannelApiImpl } from "@kie-tools-core/notifications/dist/vscode";
 import * as vscode from "vscode";
 
 let backendProxy: VsCodeBackendProxy;
@@ -28,9 +28,9 @@ let backendProxy: VsCodeBackendProxy;
 export async function activate(context: vscode.ExtensionContext) {
   console.info("Extension is alive.");
 
-  const workspaceApi = new VsCodeWorkspaceApi();
+  const workspaceApi = new VsCodeWorkspaceChannelApiImpl();
   const backendI18n = new I18n(backendI18nDefaults, backendI18nDictionaries, vscode.env.language);
-  const notificationsApi = new VsCodeNotificationsApi(workspaceApi);
+  const notificationsApi = new VsCodeNotificationsChannelApiImpl(workspaceApi);
   backendProxy = new VsCodeBackendProxy(context, backendI18n, "kie-group.vscode-extension-backend");
 
   registerTestScenarioRunnerCommand({
@@ -49,20 +49,30 @@ export async function activate(context: vscode.ExtensionContext) {
     generateSvgCommandId: "extension.kogito.getPreviewSvg",
     silentlyGenerateSvgCommandId: "extension.kogito.silentlyGenerateSvg",
     editorEnvelopeLocator: new EditorEnvelopeLocator("vscode", [
-      new EnvelopeMapping(
-        "bpmn",
-        "**/*.bpmn?(2)",
-        "dist/webview/editors/bpmn",
-        "dist/webview/BpmnEditorEnvelopeApp.js"
-      ),
-      new EnvelopeMapping("dmn", "**/*.dmn", "dist/webview/editors/dmn", "dist/webview/DmnEditorEnvelopeApp.js"),
-      new EnvelopeMapping(
-        "scesim",
-        "**/*.scesim",
-        "dist/webview/editors/scesim",
-        "dist/webview/SceSimEditorEnvelopeApp.js"
-      ),
-      new EnvelopeMapping("pmml", "**/*.pmml", "dist/webview/editors/pmml", "dist/webview/PMMLEditorEnvelopeApp.js"),
+      new EnvelopeMapping({
+        type: "bpmn",
+        filePathGlob: "**/*.bpmn?(2)",
+        resourcesPathPrefix: "dist/webview/editors/bpmn",
+        envelopePath: "dist/webview/BpmnEditorEnvelopeApp.js",
+      }),
+      new EnvelopeMapping({
+        type: "dmn",
+        filePathGlob: "**/*.dmn",
+        resourcesPathPrefix: "dist/webview/editors/dmn",
+        envelopePath: "dist/webview/DmnEditorEnvelopeApp.js",
+      }),
+      new EnvelopeMapping({
+        type: "scesim",
+        filePathGlob: "**/*.scesim",
+        resourcesPathPrefix: "dist/webview/editors/scesim",
+        envelopePath: "dist/webview/SceSimEditorEnvelopeApp.js",
+      }),
+      new EnvelopeMapping({
+        type: "pmml",
+        filePathGlob: "**/*.pmml",
+        resourcesPathPrefix: "dist/webview/editors/pmml",
+        envelopePath: "dist/webview/PMMLEditorEnvelopeApp.js",
+      }),
     ]),
     backendProxy: backendProxy,
   });

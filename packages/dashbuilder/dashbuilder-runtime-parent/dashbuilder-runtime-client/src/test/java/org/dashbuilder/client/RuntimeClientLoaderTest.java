@@ -26,14 +26,17 @@ import java.util.function.Consumer;
 import javax.enterprise.event.Event;
 
 import com.google.gwtmockito.GwtMockitoTestRunner;
-import org.dashbuilder.client.external.ExternalDataSetRegister;
+import org.dashbuilder.client.external.ExternalDataSetClientProvider;
 import org.dashbuilder.client.navigation.NavigationManager;
 import org.dashbuilder.client.parser.RuntimeModelClientParserFactory;
 import org.dashbuilder.client.perspective.generator.RuntimePerspectiveGenerator;
 import org.dashbuilder.client.plugins.RuntimePerspectivePluginManager;
+import org.dashbuilder.client.setup.RuntimeClientMode;
+import org.dashbuilder.dataset.events.DataSetDefRemovedEvent;
 import org.dashbuilder.navigation.NavTree;
 import org.dashbuilder.shared.event.UpdatedRuntimeModelEvent;
 import org.dashbuilder.shared.model.RuntimeModel;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
@@ -65,23 +68,30 @@ public class RuntimeClientLoaderTest {
     BusyIndicatorView loading;
 
     @Mock
-    RuntimeModelResourceClient runtimeModelResourceClient;
+    RuntimeModelBackendAppLoader runtimeModelResourceClient;
 
     @Mock
-    ExternalDataSetRegister externalDataSetRegister;
+    ExternalDataSetClientProvider externalDataSetRegister;
 
     @Mock
     RuntimeModelClientParserFactory parserFactory;
-    
+
     @Mock
     Event<UpdatedRuntimeModelEvent> updatedRuntimeModelEvent;
     
     @Mock
+    Event<DataSetDefRemovedEvent> dataSetDefRemovedEvent;
+
+    @Mock
     RuntimeModelContentListener runtimeModelContentListener;
 
     @InjectMocks
-    RuntimeClientLoader runtimeClientLoaderLoader;
+    RuntimeClientLoader runtimeClientLoader;
 
+    @Before
+    public void setup() {
+        runtimeClientLoader.mode = RuntimeClientMode.APP;
+    }
 
     @Test
     @SuppressWarnings("unchecked")
@@ -90,8 +100,9 @@ public class RuntimeClientLoaderTest {
         var perspective = mock(LayoutTemplate.class);
         List<LayoutTemplate> perspectives = Arrays.asList(perspective);
         var navTree = mock(NavTree.class);
-        var runtimeModel = new RuntimeModel(navTree, perspectives, System.currentTimeMillis(), Collections.emptyList());
-        
+        var runtimeModel = new RuntimeModel(navTree, perspectives, System.currentTimeMillis(), Collections.emptyList(),
+                Collections.emptyMap());
+
         doAnswer(answer -> {
             Consumer<Optional<RuntimeModel>> modelConsumer = (Consumer<Optional<RuntimeModel>>) answer.getArgument(1);
             modelConsumer.accept(Optional.of(runtimeModel));
@@ -102,7 +113,7 @@ public class RuntimeClientLoaderTest {
         Command empty = mock(Command.class);
         BiConsumer<Object, Throwable> error = mock(BiConsumer.class);
 
-        runtimeClientLoaderLoader.loadModel(modelId, runtimeModelConsumer, empty, error);
+        runtimeClientLoader.loadModel(modelId, runtimeModelConsumer, empty, error);
 
         verify(runtimeModelConsumer).accept(runtimeModel);
         verify(runtimePerspectiveGenerator).generatePerspective(eq(perspective));
@@ -121,12 +132,12 @@ public class RuntimeClientLoaderTest {
             modelConsumer.accept(Optional.empty());
             return null;
         }).when(runtimeModelResourceClient).getRuntimeModel(any(), any(Consumer.class), any());
-        
+
         Consumer<RuntimeModel> runtimeModelConsumer = mock(Consumer.class);
         Command empty = mock(Command.class);
         BiConsumer<Object, Throwable> error = mock(BiConsumer.class);
 
-        runtimeClientLoaderLoader.loadModel("", runtimeModelConsumer, empty, error);
+        runtimeClientLoader.loadModel("", runtimeModelConsumer, empty, error);
 
         verify(runtimeModelConsumer, times(0)).accept(any());
         verify(empty, times(1)).execute();
@@ -146,7 +157,7 @@ public class RuntimeClientLoaderTest {
         Command empty = mock(Command.class);
         BiConsumer<Object, Throwable> error = mock(BiConsumer.class);
 
-        runtimeClientLoaderLoader.loadModel("", runtimeModelConsumer, empty, error);
+        runtimeClientLoader.loadModel("", runtimeModelConsumer, empty, error);
 
         verify(runtimeModelConsumer, times(0)).accept(any());
         verify(empty, times(0)).execute();

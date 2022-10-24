@@ -11,7 +11,7 @@ This package contains the `Containerfile` and scripts to build a container image
 Enable the image to be built:
 
 ```bash
-$ export KIE_TOOLS_BUILD_docker=true
+$ export KIE_TOOLS_BUILD__buildContainerImages=true
 ```
 
 The image name and tags can be customized by setting the following environment variables:
@@ -28,7 +28,7 @@ Default values can be found [here](../build-env/index.js).
 After setting up the environment variables, run the following in the root folder of the repository to build the package:
 
 ```bash
-$ lerna run build:prod --scope=@kie-tools/kie-sandbox-image --include-dependencies --stream
+$ pnpm build:prod @kie-tools/kie-sandbox-image...
 ```
 
 Then check out the image:

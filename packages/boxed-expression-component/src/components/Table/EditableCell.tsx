@@ -14,14 +14,23 @@
  * limitations under the License.
  */
 
-import { FeelInput, FeelInputRef } from "@kie-tools/feel-input-component";
+import { FeelInput, FeelInputRef, FeelEditorService } from "@kie-tools/feel-input-component";
 import * as Monaco from "@kie-tools-core/monaco-editor";
 import * as React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CellProps } from "../../api";
-import { blurActiveElement, focusNextTextArea, focusTextArea, paste } from "./common";
+import {
+  blurActiveElement,
+  focusCurrentCell,
+  focusLowerCell,
+  focusNextCellByTabKey,
+  focusPrevCellByTabKey,
+  focusTextInput,
+  paste,
+} from "./common";
 import "./EditableCell.css";
 import { useBoxedExpression } from "../../context";
+import { NavigationKeysUtils } from "../common";
 
 const CELL_LINE_HEIGHT = 20;
 const MONACO_OPTIONS: Monaco.editor.IStandaloneEditorConstructionOptions = {
@@ -54,6 +63,7 @@ export function EditableCell({ value, rowIndex, columnId, onCellUpdate, readOnly
   const [previousValue, setPreviousValue] = useState("");
   const feelInputRef = useRef<FeelInputRef>(null);
   const boxedExpression = useBoxedExpression();
+  const [commandStack, setCommand] = useState<Array<string>>([]);
 
   // Common Handlers =========================================================
 
@@ -70,16 +80,16 @@ export function EditableCell({ value, rowIndex, columnId, onCellUpdate, readOnly
       }
 
       if (value !== newValue) {
-        boxedExpression.boxedExpressionEditorGWTService?.notifyUserAction();
         onCellUpdate(rowIndex, columnId, newValue ?? value);
       }
 
-      focusTextArea(textarea.current);
+      focusTextInput(textarea.current);
     },
-    [boxedExpression.boxedExpressionEditorGWTService, mode, columnId, onCellUpdate, rowIndex, value]
+    [mode, columnId, onCellUpdate, rowIndex, value]
   );
 
   const triggerEditMode = useCallback(() => {
+    boxedExpression.boxedExpressionEditorGWTService?.notifyUserAction();
     setPreviousValue(value);
     blurActiveElement();
     setMode(EDIT_MODE);
@@ -95,7 +105,7 @@ export function EditableCell({ value, rowIndex, columnId, onCellUpdate, readOnly
       return;
     }
     setIsSelected(true);
-    focusTextArea(textarea.current);
+    focusTextInput(textarea.current);
   }, [mode]);
 
   const onClick = useCallback(() => {
@@ -113,18 +123,32 @@ export function EditableCell({ value, rowIndex, columnId, onCellUpdate, readOnly
       const newValue: string = event.target.value.trim("") ?? "";
       const isPastedValue = newValue.includes("\t") || newValue.includes("\n");
 
-      if (textarea.current && isPastedValue) {
+      // event.nativeEvent.inputType==="insertFromPaste" ensure that this block is not executed on cells with newlines inside
+      if (textarea.current && isPastedValue && event.nativeEvent.inputType === "insertFromPaste") {
         const pasteValue = newValue.slice(value.length);
         paste(pasteValue, textarea.current, boxedExpression.editorRef.current!);
         triggerReadMode();
         return;
       }
 
-      onCellUpdate(rowIndex, columnId, newValue ?? value);
       triggerEditMode();
+      onCellUpdate(rowIndex, columnId, newValue ?? value);
     },
     [triggerEditMode, value, triggerReadMode, onCellUpdate, rowIndex, columnId, boxedExpression.editorRef]
   );
+
+  const onTextAreaKeyDown = useCallback((e: React.KeyboardEvent<HTMLElement>) => {
+    const key = e.key;
+    const isFiredFromThis = e.currentTarget === e.target;
+
+    if (!isFiredFromThis) {
+      return;
+    }
+
+    if (!NavigationKeysUtils.isEnter(key)) {
+      (e.target as HTMLTextAreaElement).value = "";
+    }
+  }, []);
 
   // Feel Handlers ===========================================================
 
@@ -138,32 +162,62 @@ export function EditableCell({ value, rowIndex, columnId, onCellUpdate, readOnly
 
   const onFeelKeyDown = useCallback(
     (event: Monaco.IKeyboardEvent, newValue: string) => {
-      const key = event?.code.toLowerCase() ?? "";
-      const isModKey = event.altKey || event.ctrlKey || event.shiftKey;
-      const isEnter = isModKey && key === "enter";
-      const isTab = key === "tab";
-      const isEsc = !!key.match("esc");
+      const key = event?.code ?? "";
+      const isEnter = NavigationKeysUtils.isEnter(key);
+      const isTab = NavigationKeysUtils.isTab(key);
+      const isEsc = NavigationKeysUtils.isEscape(key);
 
       if (isEnter || isTab || isEsc) {
         event.preventDefault();
       }
 
-      if (isEnter || isTab) {
+      if (isTab) {
         triggerReadMode(newValue);
         setMode(READ_MODE);
+      }
+
+      if (isEnter) {
+        if (event.ctrlKey) {
+          feelInputRef.current?.insertNewLineToMonaco();
+        } else if (!FeelEditorService.isSuggestWidgetOpen()) {
+          triggerReadMode(newValue);
+          setMode(READ_MODE);
+          focusLowerCell(textarea.current);
+        }
       }
 
       if (isEsc) {
         feelInputRef.current?.setMonacoValue(previousValue);
         triggerReadMode(previousValue);
         setMode(READ_MODE);
+        focusCurrentCell(textarea.current);
       }
 
       if (isTab) {
-        focusNextTextArea(textarea.current);
+        if (!event.shiftKey) {
+          //this setTimeout fixes the focus outside of the table when the suggestions opens
+          setTimeout(() => focusNextCellByTabKey(textarea.current, 1), 0);
+        } else {
+          //this setTimeout fixes the focus outside of the table when the suggestions opens
+          setTimeout(() => focusPrevCellByTabKey(textarea.current, 1), 0);
+        }
+      }
+
+      if (event.shiftKey && event.ctrlKey && key === "keyz") {
+        const monacoValue = feelInputRef.current?.getMonacoValue() ?? "";
+        if (commandStack.length > 0 && monacoValue.length - previousValue.length <= 0) {
+          onCellUpdate(rowIndex, columnId, commandStack[commandStack.length - 1]);
+          setCommand([...commandStack.slice(0, -1)]);
+        }
+      } else if (event.ctrlKey && key === "keyz") {
+        const monacoValue = feelInputRef.current?.getMonacoValue() ?? "";
+        if (monacoValue.length - previousValue.length >= 0) {
+          onCellUpdate(rowIndex, columnId, previousValue !== monacoValue ? previousValue : "");
+          setCommand([...commandStack, monacoValue]);
+        }
       }
     },
-    [triggerReadMode, previousValue]
+    [triggerReadMode, previousValue, rowIndex, commandStack, onCellUpdate, columnId]
   );
 
   const onFeelChange = useCallback((_e, newValue, newPreview) => {
@@ -200,11 +254,12 @@ export function EditableCell({ value, rowIndex, columnId, onCellUpdate, readOnly
           data-testid={"editable-cell-textarea"}
           className="editable-cell-textarea"
           ref={textarea}
+          tabIndex={-1}
           value={textValue}
           onChange={onTextAreaChange}
-          onFocus={onFocus}
           onBlur={onTextAreaBlur}
           readOnly={readOnly}
+          onKeyDown={onTextAreaKeyDown}
         />
         <FeelInput
           ref={feelInputRef}

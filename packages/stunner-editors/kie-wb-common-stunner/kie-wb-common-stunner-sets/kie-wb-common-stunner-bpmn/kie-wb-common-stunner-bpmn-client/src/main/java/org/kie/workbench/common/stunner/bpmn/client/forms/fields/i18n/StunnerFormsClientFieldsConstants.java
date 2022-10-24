@@ -103,6 +103,8 @@ public interface StunnerFormsClientFieldsConstants extends Messages {
 
     String RenameDiagramVariableError();
 
+    String DuplicatedVariableIDError(String processIDName);
+
     String DuplicatedVariableNameError(String variableName);
 
     String DuplicatedAttributeNameError(String attributeName);
@@ -138,6 +140,24 @@ public interface StunnerFormsClientFieldsConstants extends Messages {
     String ClassName();
 
     String Language();
+
+    String No_Correlations();
+
+    String Correlation();
+
+    String Correlations();
+
+    String Correlations_Title();
+
+    String Duplicate_Correlation(String id);
+
+    String Id();
+
+    String PropertyId();
+
+    String PropertyName();
+
+    String PropertyType();
 
     // Notifications
     String replyToOptional();

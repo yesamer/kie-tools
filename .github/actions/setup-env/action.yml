@@ -2,10 +2,7 @@ name: "Setup KIE Tools build environment"
 description: ""
 
 inputs:
-  os:
-    description: "Operating System"
-    required: true
-  path:
+  working_dir:
     description: "kie-tools path"
     required: false
     default: "."
@@ -13,8 +10,20 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: "Print storage usage (before setup)"
+      shell: bash
+      run: |
+        echo "STEP: Print storage usage (before setup)"
+        cd ${{ inputs.working_dir }}
+        du -sh .
+
+    - name: "Setup pnpm"
+      uses: pnpm/action-setup@10693b3829bf86eb2572aef5f3571dcf5ca9287d
+      with:
+        version: 7.0.0
+
     - name: "Setup Node"
-      uses: actions/setup-node@v1
+      uses: actions/setup-node@v2
       with:
         node-version: 16.13.2
 
@@ -23,76 +32,39 @@ runs:
       with:
         java-version: 11
 
-    - name: "Set up GOLANG 1.16"
-      uses: actions/setup-go@v2
+    - name: "Set up GOLANG 1.19"
+      uses: actions/setup-go@v3
       with:
-        go-version: "1.16"
+        go-version: "1.19"
 
-    - name: "Fetch Git tags"
+    - name: "Setup network timeout"
       shell: bash
       run: |
-        echo "STEP: Fetch Git tags"
-        cd ${{ inputs.path }}
-        git fetch --depth=1 origin +refs/tags/*:refs/tags/*
-
-    - name: "Setup Yarn and Lerna"
-      shell: bash
-      run: |
-        echo "STEP: Setup Yarn and Lerna"
-        cd ${{ inputs.path }}
-        npm install -g lerna@4.0.0 yarn@1.22.10
-        yarn config set network-timeout 1000000
+        echo "STEP: Setup network timeout"
+        cd ${{ inputs.working_dir }}
+        pnpm config set network-timeout 1000000
 
     - name: "Setup default Maven args"
       shell: bash
       run: |
         echo "STEP: Setup default Maven args"
-        cd ${{ inputs.path }}
-        lerna exec 'mkdir .mvn'
-        lerna exec 'echo -B -ntp > .mvn/maven.config'
-        lerna exec 'echo -Xmx2g > .mvn/jvm.config'
-
-    - name: "Bootstrap"
-      shell: bash
-      run: |
-        echo "STEP: Bootstrap"
-        cd ${{ inputs.path }}
-        yarn bootstrap
-
-    - name: "Check yarn.lock"
-      shell: bash
-      run: |
-        echo "STEP: Check yarn.lock"
-        cd ${{ inputs.path }}
-        git diff yarn.lock;
-        [ "0" == "$(git diff yarn.lock | wc -l | tr -d ' ')" ]
-
-    - name: "Check dependencies mismatches"
-      shell: bash
-      run: |
-        echo "STEP: Check dependencies mismatches"
-        cd ${{ inputs.path }}
-        npx --yes syncpack@6.2.0 list-mismatches
-
-    - name: "Check format"
-      shell: bash
-      run: |
-        echo "STEP: Check format"
-        cd ${{ inputs.path }}
-        yarn format:check
+        cd ${{ inputs.working_dir }}
+        pnpm -r exec 'bash' '-c' 'mkdir .mvn'
+        pnpm -r exec 'bash' '-c' 'echo -B -ntp > .mvn/maven.config'
+        pnpm -r exec 'bash' '-c' 'echo -Xmx2g > .mvn/jvm.config'
 
     - name: "Start Xvfb (Ubuntu only)"
       shell: bash
       run: |
         echo "STEP: Start Xvfb (Ubuntu only)"
-        cd ${{ inputs.path }}
-        if [ "${{ inputs.os }}" == "ubuntu-latest" ]; then
+        cd ${{ inputs.working_dir }}
+        if [ "${{ runner.os }}" == "Linux" ]; then
             /usr/bin/Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
         fi
 
     - name: "Configure Pagefile (Windows only)"
-      if: inputs.os == 'windows-latest'
-      uses: al-cheb/configure-pagefile-action@v1.2
+      if: runner.os == 'Windows'
+      uses: al-cheb/configure-pagefile-action@7e234852c937eea04d6ee627c599fb24a5bfffee
       with:
         minimum-size: 16GB
         maximum-size: 16GB
@@ -102,8 +74,8 @@ runs:
       shell: bash
       run: |
         echo "STEP: Increase inotify watches (Ubuntu only)"
-        cd ${{ inputs.path }}
-        if [ "${{ inputs.os }}" == "ubuntu-latest" ]; then
+        cd ${{ inputs.working_dir }}
+        if [ "${{ runner.os }}" == "Linux" ]; then
           echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p
         fi
 
@@ -111,8 +83,8 @@ runs:
       shell: bash
       run: |
         echo "STEP: Setup GOLANG packages (Linux)"
-        cd ${{ inputs.path }}
-        if [ "${{ inputs.os }}" == "ubuntu-latest" ]; then
+        cd ${{ inputs.working_dir }}
+        if [ "${{ runner.os }}" == "Linux" ]; then
           sudo apt update && \
           sudo apt install -y \
           build-essential \
@@ -120,3 +92,10 @@ runs:
           libappindicator3-dev \
           gir1.2-appindicator3-0.1
         fi
+
+    - name: "Print storage usage (after setup)"
+      shell: bash
+      run: |
+        echo "STEP: Print storage usage (after setup)"
+        cd ${{ inputs.working_dir }}
+        du -sh .

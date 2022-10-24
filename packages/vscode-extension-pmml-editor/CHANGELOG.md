@@ -1,3 +1,35 @@
+# 0.24.0 (alpha)
+
+- _(No new features)_
+
+# 0.23.0 (alpha)
+
+- _(No new features)_
+
+# 0.22.0 (alpha)
+
+- _(No new features)_
+
+# 0.21.0 (alpha)
+
+- _(No new features)_
+
+# 0.20.0 (alpha)
+
+- _(No new features)_
+
+# 0.19.0 (alpha)
+
+- _(No new features)_
+
+# 0.18.0 (alpha)
+
+- _(No new features)_
+
+# 0.17.0 (alpha)
+
+- _(No new features)_
+
 # 0.16.0 (alpha)
 
 - _(No new features)_

@@ -74,6 +74,8 @@ export interface TableProps {
   resetRowCustomFunction?: (row: DataRecord) => DataRecord;
   /** Disable/Enable cell edits. Enabled by default */
   readOnlyCells?: boolean;
+  /** Enable the  Keyboar Navigation */
+  enableKeyboarNavigation?: boolean;
 }
 
 /** Possible status for the visibility of the Table's Header */
@@ -143,4 +145,20 @@ export interface CellProps {
   rowIndex: number;
   /** Cell's column properties */
   columnId: string;
+}
+
+/**
+ * Interface to be inherited from the table cell components (td, th)
+ */
+export interface TableCellComponentProps {
+  /** event fired when the user press a key */
+  onKeyDown: (rowSpan?: number) => (e: KeyboardEvent) => void;
+  /** the row index */
+  rowIndex: number;
+  /** the cell index */
+  cellIndex: number;
+  /** the x position of the cell. Colspan are counted */
+  xPosition?: number;
+  /** the y position of the cell */
+  yPosition?: number;
 }

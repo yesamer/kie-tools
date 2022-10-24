@@ -24,11 +24,11 @@ module.exports = {
   webpackModuleRules: [
     {
       test: /\.s[ac]ss$/i,
-      use: ["style-loader", "css-loader", "sass-loader"],
+      use: [require.resolve("style-loader"), require.resolve("css-loader"), require.resolve("sass-loader")],
     },
     {
       test: /\.css$/,
-      use: ["style-loader", "css-loader"],
+      use: [require.resolve("style-loader"), require.resolve("css-loader")],
     },
     {
       test: /\.(svg|ttf|eot|woff|woff2)$/,
@@ -39,15 +39,13 @@ module.exports = {
           or: [
             (input) => posixPath(input).includes("node_modules/@patternfly/react-core/dist/styles/assets/fonts"),
             (input) => posixPath(input).includes("node_modules/@patternfly/react-core/dist/styles/assets/pficon"),
-            (input) => posixPath(input).includes("node_modules/@patternfly/patternfly/assets/fonts"),
-            (input) => posixPath(input).includes("node_modules/@patternfly/patternfly/assets/pficon"),
             (input) => posixPath(input).includes("node_modules/monaco-editor/esm/vs/base/browser/ui/codicons/codicon"),
             (input) => posixPath(input).includes("node_modules/monaco-editor/dev/vs/base/browser/ui/codicons/codicon"),
           ],
         },
       ],
       use: {
-        loader: "file-loader",
+        loader: require.resolve("file-loader"),
         options: {
           // Limit at 50k. larger files emitted into separate files
           limit: 5000,
@@ -61,7 +59,7 @@ module.exports = {
       include: (input) => input.indexOf("background-filter.svg") > 1,
       use: [
         {
-          loader: "url-loader",
+          loader: require.resolve("url-loader"),
           options: {
             limit: 5000,
             outputPath: "svgs",
@@ -90,7 +88,7 @@ module.exports = {
         input.indexOf("background-filter") === -1 &&
         input.indexOf("pficon") === -1,
       use: {
-        loader: "raw-loader",
+        loader: require.resolve("raw-loader"),
         options: {},
       },
     },
@@ -100,7 +98,6 @@ module.exports = {
         {
           or: [
             (input) => posixPath(input).includes("src"),
-            (input) => posixPath(input).includes("node_modules/@patternfly/patternfly/assets/images"),
             (input) => posixPath(input).includes("node_modules/@patternfly/react-styles/css/assets/images"),
             (input) => posixPath(input).includes("node_modules/@patternfly/react-core/dist/styles/assets/images"),
             (input) =>
@@ -120,7 +117,7 @@ module.exports = {
       ],
       use: [
         {
-          loader: "url-loader",
+          loader: require.resolve("url-loader"),
           options: {
             limit: 5000,
             outputPath: "images",

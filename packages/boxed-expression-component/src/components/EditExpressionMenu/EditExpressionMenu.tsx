@@ -16,14 +16,15 @@
 
 import "./EditExpressionMenu.css";
 import * as React from "react";
-import { useCallback, useEffect, useState } from "react";
-import { PopoverMenu } from "../PopoverMenu";
+import { useCallback, useEffect, useState, useRef } from "react";
+import { PopoverMenu, PopoverMenuRef } from "../PopoverMenu";
 import { useBoxedExpressionEditorI18n } from "../../i18n";
 import { DataType, ExpressionProps } from "../../api";
 import { useBoxedExpression } from "../../context";
 import { DataTypeSelector } from "./DataTypeSelector";
-import { CogIcon } from "@patternfly/react-icons";
+import { CogIcon } from "@patternfly/react-icons/dist/js/icons/cog-icon";
 import { Button } from "@patternfly/react-core";
+import { NavigationKeysUtils } from "../common";
 
 export interface EditExpressionMenuProps {
   /** Optional children element to be considered for triggering the edit expression menu */
@@ -68,6 +69,9 @@ export const EditExpressionMenu: React.FunctionComponent<EditExpressionMenuProps
 
   const [dataType, setDataType] = useState(selectedDataType);
   const [expressionName, setExpressionName] = useState(selectedExpressionName);
+  const expressionNameRef = useRef<HTMLInputElement>(null);
+  const [dataTypeSelectorOpen, setDataTypeSelectorOpen] = useState(false);
+  const popoverMenuRef = useRef<PopoverMenuRef>();
 
   useEffect(() => {
     setExpressionName(selectedExpressionName);
@@ -77,47 +81,102 @@ export const EditExpressionMenu: React.FunctionComponent<EditExpressionMenuProps
     setDataType(selectedDataType);
   }, [selectedDataType]);
 
-  const onExpressionNameChange = useCallback(
-    (event) => {
-      setExpressionName(event.target.value);
-      if (event.type === "blur") {
-        boxedExpression.boxedExpressionEditorGWTService?.notifyUserAction();
-        onExpressionUpdate({
-          name: event.target.value,
-          dataType,
-        });
-      }
-    },
-    [boxedExpression.boxedExpressionEditorGWTService, dataType, onExpressionUpdate]
-  );
+  const onExpressionNameChange = useCallback((event) => {
+    setExpressionName(event.target.value);
+  }, []);
 
-  const onDataTypeChange = useCallback(
-    (dataType: DataType) => {
-      boxedExpression.boxedExpressionEditorGWTService?.notifyUserAction();
-      setDataType(dataType);
-      onExpressionUpdate({
-        name: expressionName,
-        dataType: dataType,
-      });
-    },
-    [boxedExpression.boxedExpressionEditorGWTService, expressionName, onExpressionUpdate]
-  );
+  const onDataTypeChange = useCallback((dataType: DataType) => {
+    setDataType(dataType);
+  }, []);
 
   const openManageDataType = useCallback(
     () => boxedExpression.boxedExpressionEditorGWTService?.openManageDataType(),
     [boxedExpression.boxedExpressionEditorGWTService]
   );
 
+  /**
+   * save the expression data from the PopoverMenu
+   */
+  const saveExpression = useCallback(() => {
+    boxedExpression.boxedExpressionEditorGWTService?.notifyUserAction();
+    onExpressionUpdate({
+      name: expressionName,
+      dataType: dataType,
+    });
+  }, [boxedExpression.boxedExpressionEditorGWTService, expressionName, onExpressionUpdate, dataType]);
+
+  const onHide = useCallback(() => {
+    saveExpression();
+  }, [saveExpression]);
+
+  /**
+   * reset the inputs of the popover to the original state
+   */
+  const resetFormData = useCallback(() => {
+    setExpressionName(selectedExpressionName);
+    setDataType(selectedDataType);
+  }, [selectedExpressionName, selectedDataType]);
+
+  const onCancel = useCallback(
+    (_event: MouseEvent | KeyboardEvent) => {
+      resetFormData();
+    },
+    [resetFormData]
+  );
+
+  const onShown = useCallback(() => {
+    expressionNameRef.current?.focus();
+    popoverMenuRef?.current?.setIsVisible(true);
+  }, []);
+
+  const onExpressionNameKeyPress = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (NavigationKeysUtils.isEnter(e.key)) {
+        saveExpression();
+        popoverMenuRef?.current?.setIsVisible(false);
+      }
+    },
+    [saveExpression]
+  );
+
+  const onExpressionNameKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (NavigationKeysUtils.isEscape(e.key) && !dataTypeSelectorOpen) {
+        resetFormData();
+        popoverMenuRef?.current?.setIsVisible(false);
+      }
+    },
+    [resetFormData, dataTypeSelectorOpen]
+  );
+
+  const onDataTypeKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (NavigationKeysUtils.isEscape(e.key) && !dataTypeSelectorOpen) {
+        popoverMenuRef?.current?.setIsVisible(false);
+      }
+    },
+    [dataTypeSelectorOpen]
+  );
+
+  const onDataTypeToggle = useCallback((isOpen: boolean) => {
+    setDataTypeSelectorOpen(isOpen);
+  }, []);
+
   return (
     <PopoverMenu
+      ref={popoverMenuRef}
       title={title}
       arrowPlacement={arrowPlacement}
       appendTo={appendTo}
+      onCancel={onCancel}
+      onHide={onHide}
+      onShown={onShown}
       body={
-        <div className="edit-expression-menu">
+        <div className="edit-expression-menu" onKeyDown={onExpressionNameKeyDown}>
           <div className="expression-name">
             <label>{nameField}</label>
             <input
+              ref={expressionNameRef}
               type="text"
               id="expression-name"
               data-ouia-component-id="edit-expression-name"
@@ -126,6 +185,7 @@ export const EditExpressionMenu: React.FunctionComponent<EditExpressionMenuProps
               onBlur={onExpressionNameChange}
               className="form-control pf-c-form-control"
               placeholder={EXPRESSION_NAME}
+              onKeyPress={onExpressionNameKeyPress}
             />
           </div>
           <div className="expression-data-type">
@@ -140,7 +200,12 @@ export const EditExpressionMenu: React.FunctionComponent<EditExpressionMenuProps
             >
               {i18n.manage}
             </Button>
-            <DataTypeSelector selectedDataType={dataType} onDataTypeChange={onDataTypeChange} />
+            <DataTypeSelector
+              selectedDataType={dataType}
+              onDataTypeChange={onDataTypeChange}
+              onToggle={onDataTypeToggle}
+              onKeyDown={onDataTypeKeyDown}
+            />
           </div>
         </div>
       }

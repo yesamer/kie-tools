@@ -14,19 +14,21 @@
  * limitations under the License.
  */
 
-import { DmnSchema } from "@kie-tools/form/dist/dmn";
+import { InputRow, DmnSchema } from "@kie-tools/form-dmn";
 import * as React from "react";
 import { useContext } from "react";
 import { DmnRunnerModelPayload, DmnRunnerService } from "./DmnRunnerService";
 import { DmnRunnerMode, DmnRunnerStatus } from "./DmnRunnerStatus";
 
 export interface DmnRunnerContextType {
-  inputRows: Array<object>;
   currentInputRowIndex: number;
   error: boolean;
+  inputRows: Array<InputRow>;
+  didUpdateInputRows: boolean;
   isExpanded: boolean;
-  mode: DmnRunnerMode;
   jsonSchema?: DmnSchema;
+  mode: DmnRunnerMode;
+  didUpdateOutputRows: boolean;
   service: DmnRunnerService;
   status: DmnRunnerStatus;
 }
@@ -36,8 +38,10 @@ export interface DmnRunnerCallbacksContextType {
   setExpanded: React.Dispatch<React.SetStateAction<boolean>>;
   setError: React.Dispatch<React.SetStateAction<boolean>>;
   setCurrentInputRowIndex: React.Dispatch<React.SetStateAction<number>>;
+  setInputRows: React.Dispatch<React.SetStateAction<Array<InputRow>>>;
+  setDidUpdateInputRows: React.Dispatch<React.SetStateAction<boolean>>;
+  setDidUpdateOutputRows: React.Dispatch<React.SetStateAction<boolean>>;
   setMode: React.Dispatch<React.SetStateAction<DmnRunnerMode>>;
-  setInputRows: React.Dispatch<React.SetStateAction<any>>;
 }
 
 export const DmnRunnerStateContext = React.createContext<DmnRunnerContextType>({} as any);

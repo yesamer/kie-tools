@@ -15,17 +15,22 @@
  */
 
 import * as React from "react";
-import { useCallback, useMemo } from "react";
-import { Tbody, Td, Tr } from "@patternfly/react-table";
-import { Column as IColumn, TableHeaderVisibility } from "../../api";
-import { Cell, Column, Row, TableInstance } from "react-table";
-import { DEFAULT_MIN_WIDTH, Resizer } from "../Resizer";
+import { BaseSyntheticEvent, useCallback, useMemo } from "react";
+import { Tbody, Tr } from "@patternfly/react-table";
+import { TableHeaderVisibility } from "../../api";
+import { Cell, Column, HeaderGroup, Row, TableInstance } from "react-table";
+import { useBoxedExpression } from "../../context";
+import { LOGIC_TYPE_SELECTOR_CLASS } from "../LogicTypeSelector";
+import { TdAdditiveCell } from "./TdAdditiveCell";
+import { TdCell } from "./TdCell";
 
 export interface TableBodyProps {
   /** Table instance */
   tableInstance: TableInstance;
   /** The way in which the header will be rendered */
   headerVisibility?: TableHeaderVisibility;
+  /** True, for skipping the creation in the DOM of the last defined header group */
+  skipLastHeaderGroup: boolean;
   /** Optional children element to be appended below the table content */
   children?: React.ReactElement[];
   /** Custom function for getting row key prop, and avoid using the row index */
@@ -34,6 +39,8 @@ export interface TableBodyProps {
   getColumnKey: (column: Column) => string;
   /** Function to be executed when columns are modified */
   onColumnsUpdate?: (columns: Column[]) => void;
+  /** Function to be executed when a key has been pressed on a cell */
+  onCellKeyDown: () => (e: KeyboardEvent) => void;
   /** Td props */
   tdProps: (cellIndex: number, rowIndex: number) => any;
 }
@@ -41,58 +48,75 @@ export interface TableBodyProps {
 export const TableBody: React.FunctionComponent<TableBodyProps> = ({
   tableInstance,
   children,
-  headerVisibility,
+  headerVisibility = TableHeaderVisibility.Full,
+  skipLastHeaderGroup,
   getRowKey,
   getColumnKey,
   onColumnsUpdate,
+  onCellKeyDown,
   tdProps,
 }) => {
+  const { boxedExpressionEditorGWTService } = useBoxedExpression();
+
   const headerVisibilityMemo = useMemo(() => headerVisibility ?? TableHeaderVisibility.Full, [headerVisibility]);
+
+  const headerRowsLength = useMemo(() => {
+    const headerGroupsLength = tableInstance.headerGroups.length - (skipLastHeaderGroup ? 1 : 0);
+    switch (headerVisibility) {
+      case TableHeaderVisibility.Full:
+        return headerGroupsLength;
+      case TableHeaderVisibility.LastLevel:
+        return headerGroupsLength - 1;
+      case TableHeaderVisibility.SecondToLastLevel:
+        return headerGroupsLength - 1;
+      default:
+        return 0;
+    }
+  }, [headerVisibility, tableInstance]);
 
   const renderCell = useCallback(
     (cellIndex: number, cell: Cell, rowIndex: number, inAForm: boolean) => {
-      let cellType = cellIndex === 0 ? "counter-cell" : "data-cell";
-      const column = tableInstance.allColumns[cellIndex] as unknown as IColumn;
-      const width = typeof column?.width === "number" ? column?.width : DEFAULT_MIN_WIDTH;
-
-      const onResize = (width: number) => {
-        if (column.setWidth) {
-          column.setWidth(width);
-          tableInstance.allColumns[cellIndex].width = width;
-          onColumnsUpdate?.(tableInstance.columns);
-        }
-      };
-      const cellTemplate =
-        cellIndex === 0 ? (
-          <>{rowIndex + 1}</>
-        ) : (
-          <Resizer width={width} onHorizontalResizeStop={onResize}>
-            <>
-              {inAForm && typeof (cell.column as any)?.cellDelegate === "function"
-                ? (cell.column as any)?.cellDelegate(`dmn-auto-form-${rowIndex}`)
-                : cell.render("Cell")}
-            </>
-          </Resizer>
-        );
-
-      if (typeof (cell.column as any)?.cellDelegate === "function") {
-        cellType += " input";
-      }
-
-      const tdProp = tdProps(cellIndex, rowIndex);
-
       return (
-        <Td
-          {...tdProp}
-          key={`${rowIndex}-${getColumnKey(cell.column)}-${cellIndex}`}
-          data-ouia-component-id={"expression-column-" + cellIndex}
-          className={`${cellType}`}
-        >
-          {cellTemplate}
-        </Td>
+        <TdCell
+          key={cellIndex}
+          cellIndex={cellIndex}
+          cell={cell}
+          rowIndex={rowIndex}
+          inAForm={inAForm}
+          onKeyDown={onCellKeyDown}
+          tableInstance={tableInstance}
+          getColumnKey={getColumnKey}
+          onColumnsUpdate={onColumnsUpdate!}
+          tdProps={tdProps}
+          yPosition={headerRowsLength + rowIndex}
+        />
       );
     },
-    [getColumnKey, onColumnsUpdate, tableInstance, tdProps]
+    [getColumnKey, onColumnsUpdate, tableInstance, tdProps, onCellKeyDown, headerRowsLength]
+  );
+
+  const eventPathHasNestedExpression = useCallback((event: React.BaseSyntheticEvent, path: EventTarget[]) => {
+    let currentPathTarget: EventTarget = event.target;
+    let currentIndex = 0;
+    while (currentPathTarget !== event.currentTarget && currentIndex < path.length) {
+      currentIndex++;
+      currentPathTarget = path[currentIndex];
+      if ((currentPathTarget as HTMLElement)?.classList?.contains(LOGIC_TYPE_SELECTOR_CLASS)) {
+        return true;
+      }
+    }
+    return false;
+  }, []);
+
+  const onRowClick = useCallback(
+    (rowKey: string) => (event: BaseSyntheticEvent) => {
+      const nativeEvent = event.nativeEvent as Event;
+      const path: EventTarget[] = nativeEvent?.composedPath?.() || [];
+      if (!eventPathHasNestedExpression(event, path)) {
+        boxedExpressionEditorGWTService?.selectObject(rowKey);
+      }
+    },
+    [boxedExpressionEditorGWTService, eventPathHasNestedExpression]
   );
 
   const renderBodyRow = useCallback(
@@ -102,41 +126,57 @@ export const TableBody: React.FunctionComponent<TableBodyProps> = ({
       const RowDelegate = (row.original as any).rowDelegate;
       const rowKey = getRowKey(row);
       const rowClassNames = `${rowKey} table-row`;
+
+      const buildTableRow = (inAForm: boolean) => (
+        <Tr
+          className={rowClassNames}
+          {...rowProps}
+          ouiaId={"expression-row-" + rowIndex}
+          key={rowKey}
+          onClick={onRowClick(rowKey)}
+        >
+          {row.cells.map((cell: Cell, cellIndex: number) => renderCell(cellIndex, cell, rowIndex, inAForm))}
+        </Tr>
+      );
+
       return (
         <React.Fragment key={rowKey}>
-          {RowDelegate ? (
-            <RowDelegate>
-              <Tr className={rowClassNames} {...rowProps} ouiaId={"expression-row-" + rowIndex} key={rowKey}>
-                {row.cells.map((cell: Cell, cellIndex: number) => renderCell(cellIndex, cell, rowIndex, true))}
-              </Tr>
-            </RowDelegate>
-          ) : (
-            <Tr className={rowClassNames} {...rowProps} ouiaId={"expression-row-" + rowIndex} key={rowKey}>
-              {row.cells.map((cell: Cell, cellIndex: number) => renderCell(cellIndex, cell, rowIndex, false))}
-            </Tr>
-          )}
+          {RowDelegate ? <RowDelegate>{buildTableRow(true)}</RowDelegate> : buildTableRow(false)}
         </React.Fragment>
       );
     },
-    [getRowKey, renderCell, tableInstance]
+    [getRowKey, onRowClick, renderCell, tableInstance]
   );
 
-  const renderAdditiveRow = useMemo(
-    () => (
+  const renderAdditiveRow = useCallback(
+    (rowIndex: number) => (
       <Tr className="table-row additive-row">
-        <Td role="cell" className="empty-cell">
-          <br />
-        </Td>
+        <TdAdditiveCell
+          isEmptyCell={true}
+          rowIndex={rowIndex}
+          cellIndex={0}
+          onKeyDown={onCellKeyDown}
+          xPosition={0}
+          yPosition={headerRowsLength + rowIndex}
+        />
         {children?.map((child, childIndex) => {
           return (
-            <Td role="cell" key={childIndex} className="row-remainder-content">
+            <TdAdditiveCell
+              key={childIndex}
+              cellIndex={childIndex}
+              isEmptyCell={false}
+              rowIndex={rowIndex}
+              onKeyDown={onCellKeyDown}
+              xPosition={childIndex + 1}
+              yPosition={headerRowsLength + rowIndex}
+            >
               {child}
-            </Td>
+            </TdAdditiveCell>
           );
         })}
       </Tr>
     ),
-    [children]
+    [children, onCellKeyDown]
   );
 
   return (
@@ -145,7 +185,7 @@ export const TableBody: React.FunctionComponent<TableBodyProps> = ({
       {...(tableInstance.getTableBodyProps() as any)}
     >
       {tableInstance.rows.map((row: Row, rowIndex: number) => renderBodyRow(row, rowIndex))}
-      {children ? renderAdditiveRow : null}
+      {children ? renderAdditiveRow(tableInstance.rows.length) : null}
     </Tbody>
   );
 };

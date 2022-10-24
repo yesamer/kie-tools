@@ -73,6 +73,10 @@ public interface AppConstants extends Messages {
 
     String notAbleToLoadDashboard(String message);
 
-    String errorLoadingBackend();
+    String clientMode();
+
+    String emptyEditorMode();
+
+    String errorContentTitle();
 
 }

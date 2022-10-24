@@ -28,7 +28,7 @@ import * as React from "react";
 import { useImperativeHandle, useMemo, useRef, useState } from "react";
 import { EmbeddedEditorFile, StateControl } from "../../channel";
 import { useEffectAfterFirstRender } from "../common";
-import { KogitoEditorChannelApiImpl } from "./KogitoEditorChannelApiImpl";
+import { EmbeddedEditorChannelApiImpl } from "./EmbeddedEditorChannelApiImpl";
 import { EnvelopeServer } from "@kie-tools-core/envelope-bus/dist/channel";
 import { useConnectedEnvelopeServer } from "@kie-tools-core/envelope-bus/dist/hooks";
 
@@ -48,6 +48,9 @@ export type Props = EmbeddedEditorChannelApiOverrides & {
   editorEnvelopeLocator: EditorEnvelopeLocator;
   channelType: ChannelType;
   locale: string;
+  customChannelApiImpl?: KogitoEditorChannelApi;
+  stateControl?: StateControl;
+  isReady?: boolean;
 };
 
 /**
@@ -77,23 +80,28 @@ const RefForwardingEmbeddedEditor: React.ForwardRefRenderFunction<EmbeddedEditor
   forwardedRef
 ) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const stateControl = useMemo(() => new StateControl(), [props.file.getFileContents]);
+  const stateControl = useMemo(
+    () => props.stateControl ?? new StateControl(),
+    [props.file.getFileContents, props.stateControl]
+  );
   const [isReady, setReady] = useState(false);
-
   const envelopeMapping = useMemo(
-    () => props.editorEnvelopeLocator.getEnvelopeMapping(props.file.fileName + "." + props.file.fileExtension),
+    () => props.editorEnvelopeLocator.getEnvelopeMapping(props.file.path ?? props.file.fileName),
     [props.editorEnvelopeLocator, props.file]
   );
 
   //Setup envelope bus communication
-  const kogitoEditorChannelApiImpl = useMemo(() => {
-    return new KogitoEditorChannelApiImpl(stateControl, props.file, props.locale, {
-      ...props,
-      kogitoEditor_ready: () => {
-        setReady(true);
-        props.kogitoEditor_ready?.();
-      },
-    });
+  const channelApiImpl = useMemo(() => {
+    return (
+      props.customChannelApiImpl ??
+      new EmbeddedEditorChannelApiImpl(stateControl, props.file, props.locale, {
+        ...props,
+        kogitoEditor_ready: () => {
+          setReady(true);
+          props.kogitoEditor_ready?.();
+        },
+      })
+    );
   }, [stateControl, props]);
 
   const envelopeServer = useMemo(() => {
@@ -121,7 +129,7 @@ const RefForwardingEmbeddedEditor: React.ForwardRefRenderFunction<EmbeddedEditor
     envelopeMapping?.resourcesPathPrefix,
   ]);
 
-  useConnectedEnvelopeServer(envelopeServer, kogitoEditorChannelApiImpl);
+  useConnectedEnvelopeServer(envelopeServer, channelApiImpl);
 
   useEffectAfterFirstRender(() => {
     envelopeServer.envelopeApi.notifications.kogitoI18n_localeChange.send(props.locale);
@@ -129,7 +137,10 @@ const RefForwardingEmbeddedEditor: React.ForwardRefRenderFunction<EmbeddedEditor
 
   useEffectAfterFirstRender(() => {
     props.file.getFileContents().then((content) => {
-      envelopeServer.envelopeApi.requests.kogitoEditor_contentChanged({ content: content! });
+      envelopeServer.envelopeApi.requests.kogitoEditor_contentChanged(
+        { content: content!, path: props.file.fileName },
+        { showLoadingOverlay: true }
+      );
     });
   }, [props.file.getFileContents]);
 
@@ -149,7 +160,7 @@ const RefForwardingEmbeddedEditor: React.ForwardRefRenderFunction<EmbeddedEditor
 
       return {
         iframeRef,
-        isReady: isReady,
+        isReady: props.isReady ?? isReady,
         getStateControl: () => stateControl,
         getEnvelopeServer: () => envelopeServer,
         getElementPosition: (s) =>
@@ -159,11 +170,15 @@ const RefForwardingEmbeddedEditor: React.ForwardRefRenderFunction<EmbeddedEditor
         getContent: () => envelopeServer.envelopeApi.requests.kogitoEditor_contentRequest().then((c) => c.content),
         getPreview: () => envelopeServer.envelopeApi.requests.kogitoEditor_previewRequest(),
         setContent: (path, content) =>
-          envelopeServer.envelopeApi.requests.kogitoEditor_contentChanged({ path, content }),
+          envelopeServer.envelopeApi.requests.kogitoEditor_contentChanged(
+            { path, content },
+            { showLoadingOverlay: false }
+          ),
         validate: () => envelopeServer.envelopeApi.requests.kogitoEditor_validate(),
+        setTheme: (theme) => Promise.resolve(envelopeServer.shared.kogitoEditor_theme.set(theme)),
       };
     },
-    [envelopeServer, stateControl, isReady]
+    [props.isReady, isReady, stateControl, envelopeServer]
   );
 
   return (

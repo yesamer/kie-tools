@@ -3,7 +3,7 @@
   <parent>
     <groupId>io.github.kiegroup.kie.tools</groupId>
     <artifactId>vscode-java-code-completion-extension-plugin</artifactId>
-    <version>0.0.0</version>
+    <version>${revision}</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>vscode-java-code-completion-extension-plugin-core</artifactId>
@@ -12,19 +12,14 @@
   <description>vscode-java-code-completion-extension-plugin-core</description>
 
   <properties>
-    <version.com.google.code.gson>2.8.5</version.com.google.code.gson>
     <version.org.freemarker>2.3.31</version.org.freemarker>
-    <version.org.junit.jupiter>5.7.2</version.org.junit.jupiter>
-    <version.org.assertj>3.21.0</version.org.assertj>
+    <version.org.assertj>3.23.1</version.org.assertj>
+    <version.org.junit.jupiter>5.8.2</version.org.junit.jupiter>
+    <version.org.mockito>4.6.1</version.org.mockito>
   </properties>
 
   <dependencyManagement>
     <dependencies>
-      <dependency>
-        <groupId>com.google.code.gson</groupId>
-        <artifactId>gson</artifactId>
-        <version>${version.com.google.code.gson}</version>
-      </dependency>
       <dependency>
         <groupId>org.freemarker</groupId>
         <artifactId>freemarker</artifactId>
@@ -40,13 +35,14 @@
         <artifactId>assertj-core</artifactId>
         <version>${version.org.assertj}</version>
       </dependency>
+      <dependency>
+        <groupId>org.mockito</groupId>
+        <artifactId>mockito-core</artifactId>
+        <version>${version.org.mockito}</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
   <dependencies>
-    <dependency>
-      <groupId>com.google.code.gson</groupId>
-      <artifactId>gson</artifactId>
-    </dependency>
     <dependency>
       <groupId>org.freemarker</groupId>
       <artifactId>freemarker</artifactId>
@@ -59,6 +55,11 @@
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

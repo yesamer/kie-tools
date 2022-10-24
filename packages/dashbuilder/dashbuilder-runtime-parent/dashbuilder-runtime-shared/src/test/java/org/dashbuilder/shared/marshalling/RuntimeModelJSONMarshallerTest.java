@@ -16,6 +16,7 @@
 package org.dashbuilder.shared.marshalling;
 
 import java.util.ArrayList;
+import java.util.Collections;
 
 import org.dashbuilder.dataset.def.ExternalDataSetDef;
 import org.dashbuilder.dataset.impl.ExternalDataSetDefBuilderImpl;
@@ -62,7 +63,10 @@ public class RuntimeModelJSONMarshallerTest {
             "      \"dynamic\": false,\n" + 
             "      \"url\": \"http://acme.com\"\n" + 
             "    }\n" + 
-            "  ]\n" + 
+            "  ],\n" + 
+            "  \"properties\": {\n" + 
+            "    \"TEST\": \"VALUE\"\n" + 
+            "  }\n" + 
             "}";
 
     RuntimeModelJSONMarshaller marshaller;
@@ -87,7 +91,8 @@ public class RuntimeModelJSONMarshallerTest {
         var model = new RuntimeModel(new NavTreeBuilder().item("TestId", "TestItem", "Item Description", false).build(),
                 templates,
                 123l,
-                externalDefs);
+                externalDefs,
+                Collections.singletonMap("TEST", "VALUE"));
 
         var parsed = marshaller.toJson(model).toJson();
         assertEquals(RUNTIME_MODEL_JSON, parsed);
@@ -96,7 +101,16 @@ public class RuntimeModelJSONMarshallerTest {
     @Test
     public void fromJsonTest() {
         var model = marshaller.fromJson(RUNTIME_MODEL_JSON);
+        checkModel(model);
+    }
+    
+    @Test
+    public void fromJsonTestWithPages() {
+        var model = marshaller.fromJson(RUNTIME_MODEL_JSON.replaceAll("layoutTemplates", "pages"));
+        checkModel(model);
+    }
 
+    private void checkModel(RuntimeModel model) {
         var item = model.getNavTree().getItemById("TestId");
         assertEquals(123l, model.getLastModified().longValue());
         assertEquals("My Template", model.getLayoutTemplates().get(0).getName());
@@ -107,6 +121,8 @@ public class RuntimeModelJSONMarshallerTest {
 
         assertEquals("123", model.getClientDataSets().get(0).getUUID());
         assertEquals("http://acme.com", model.getClientDataSets().get(0).getUrl());
+
+        assertEquals("VALUE", model.getProperties().get("TEST"));
     }
 
 }

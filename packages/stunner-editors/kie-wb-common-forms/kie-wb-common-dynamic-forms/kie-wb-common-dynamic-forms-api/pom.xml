@@ -6,7 +6,7 @@
   <parent>
     <artifactId>kie-wb-common-dynamic-forms</artifactId>
     <groupId>org.kie.kogito.stunner.editors</groupId>
-    <version>0.0.0</version>
+    <version>${revision}</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
@@ -28,11 +28,6 @@
     <dependency>
       <groupId>org.kie.kogito.stunner.editors</groupId>
       <artifactId>errai-data-binding</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.kie.soup</groupId>
-      <artifactId>kie-soup-commons</artifactId>
     </dependency>
 
     <dependency>

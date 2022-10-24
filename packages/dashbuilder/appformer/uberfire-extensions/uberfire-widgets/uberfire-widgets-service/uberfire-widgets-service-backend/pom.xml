@@ -20,17 +20,13 @@
   <parent>
     <groupId>org.uberfire</groupId>
     <artifactId>uberfire-widgets-service</artifactId>
-    <version>0.0.0</version>
+    <version>${revision}</version>
   </parent>
   <name>Uberfire Widgets Commons Services Backend</name>
   <description>Uberfire Widgets Commons Services Backend</description>
   <artifactId>uberfire-widgets-service-backend</artifactId>
   <packaging>jar</packaging>
   <dependencies>
-    <dependency>
-      <groupId>com.thoughtworks.xstream</groupId>
-      <artifactId>xstream</artifactId>
-    </dependency>
     <dependency>
       <groupId>org.kie.soup</groupId>
       <artifactId>kie-soup-commons</artifactId>

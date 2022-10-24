@@ -22,7 +22,7 @@ const resourcesPathPrefix = new ChromeRouter().getResourcesPathPrefix();
 
 startExtension({
   name: "Kogito :: BPMN and DMN editors",
-  extensionIconUrl: chrome.extension.getURL("/resources/kie_icon_rgb_fullcolor_default.svg"),
+  extensionIconUrl: chrome.runtime.getURL("/resources/kie_icon_rgb_fullcolor_default.svg"),
   githubAuthTokenCookieName: "github-oauth-token-kie-editors",
   externalEditorManager: {
     name: "KIE Sandbox",
@@ -32,18 +32,23 @@ startExtension({
     },
   },
   editorEnvelopeLocator: new EditorEnvelopeLocator(window.location.origin, [
-    new EnvelopeMapping(
-      "bpmn",
-      "**/*.bpmn?(2)",
-      `${resourcesPathPrefix}/bpmn`,
-      `${resourcesPathPrefix}/bpmn-envelope.html`
-    ),
-    new EnvelopeMapping("dmn", "**/*.dmn", `${resourcesPathPrefix}/dmn`, `${resourcesPathPrefix}/dmn-envelope.html`),
-    new EnvelopeMapping(
-      "scesim",
-      "**/*.scesim",
-      `${resourcesPathPrefix}/scesim`,
-      `${resourcesPathPrefix}/scesim-envelope.html`
-    ),
+    new EnvelopeMapping({
+      type: "bpmn",
+      filePathGlob: "**/*.bpmn?(2)",
+      resourcesPathPrefix: `${resourcesPathPrefix}/bpmn`,
+      envelopePath: `${resourcesPathPrefix}/bpmn-envelope.html`,
+    }),
+    new EnvelopeMapping({
+      type: "dmn",
+      filePathGlob: "**/*.dmn",
+      resourcesPathPrefix: `${resourcesPathPrefix}/dmn`,
+      envelopePath: `${resourcesPathPrefix}/dmn-envelope.html`,
+    }),
+    new EnvelopeMapping({
+      type: "scesim",
+      filePathGlob: "**/*.scesim",
+      resourcesPathPrefix: `${resourcesPathPrefix}/scesim`,
+      envelopePath: `${resourcesPathPrefix}/scesim-envelope.html`,
+    }),
   ]),
 });

@@ -15,7 +15,11 @@
  */
 package org.dashbuilder.dataset.json;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.dashbuilder.dataset.def.ExternalDataSetDef;
+import org.dashbuilder.json.Json;
 import org.dashbuilder.json.JsonObject;
 
 import static org.dashbuilder.dataset.json.DataSetDefJSONMarshaller.isBlank;
@@ -26,14 +30,37 @@ public class ExternalDefJSONMarshaller implements DataSetDefJSONMarshallerExt<Ex
 
     public static final String URL = "url";
     public static final String DYNAMIC = "dynamic";
+    public static final String EXPRESSION = "expression";
+    public static final String CONTENT = "content";
+    public static final String HEADERS = "headers";
 
     @Override
     public void fromJson(ExternalDataSetDef def, JsonObject json) {
         var url = json.getString(URL);
         var dynamic = json.getBoolean(DYNAMIC);
+        var content = json.getString(CONTENT);
+        var expression = json.getString(EXPRESSION);
+        var headers = json.getObject(HEADERS);
+        
+        if (isBlank(url) && isBlank(content)) {
+            throw new IllegalArgumentException("External Data Sets must have \"url\" or \"content\" field");
+        }
 
         if (!isBlank(url)) {
             def.setUrl(url);
+        }
+
+        if (!isBlank(content)) {
+            def.setContent(content);
+        }       
+        
+        if (!isBlank(expression)) {
+            def.setExpression(expression);
+        }
+
+        if (headers != null) {
+            var headersMap = getHeaders(headers);
+            def.setHeaders(headersMap);
         }
 
         def.setDynamic(dynamic);
@@ -43,6 +70,21 @@ public class ExternalDefJSONMarshaller implements DataSetDefJSONMarshallerExt<Ex
     public void toJson(ExternalDataSetDef def, JsonObject json) {
         json.put(DYNAMIC, def.isDynamic());
         json.put(URL, def.getUrl());
+        json.put(EXPRESSION, def.getExpression());
+        json.put(CONTENT, def.getContent());
+
+        if (def.getHeaders() != null) {
+            var headers = Json.createObject();
+            def.getHeaders().forEach((k, v) -> headers.set(k, Json.create(v)));
+            json.set(HEADERS, headers);
+        }
     }
 
+    private Map<String, String> getHeaders(JsonObject headers) {
+        var headersMap = new HashMap<String, String>();
+        for (var key : headers.keys()) {
+            headersMap.put(key, headers.getString(key));
+        }
+        return headersMap;
+    }
 }

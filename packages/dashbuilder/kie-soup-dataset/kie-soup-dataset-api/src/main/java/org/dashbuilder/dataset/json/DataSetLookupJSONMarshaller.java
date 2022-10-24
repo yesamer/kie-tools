@@ -22,9 +22,9 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.dashbuilder.dataset.DataSetLookup;
-import org.dashbuilder.dataset.DataSetOp;
 import org.dashbuilder.dataset.date.DayOfWeek;
 import org.dashbuilder.dataset.date.Month;
 import org.dashbuilder.dataset.filter.ColumnFilter;
@@ -53,18 +53,21 @@ import org.dashbuilder.json.JsonValue;
 public class DataSetLookupJSONMarshaller {
 
     private static final String UUID = "dataSetUuid";
+    private static final String DATASET_UUID = "uuid";
     private static final String ROWCOUNT = "rowCount";
     private static final String ROWOFFSET = "rowOffset";
 
     protected static final String COLUMN = "column";
     private static final String SOURCE = "source";
     private static final String FILTEROPS = "filterOps";
+    private static final String FILTER = "filter";
 
     protected static final String FUNCTION_TYPE = "function";
     protected static final String FUNCTION_ARGS = "args";
     protected static final String FUNCTION_LABEL_VALUE = "labelValue";
 
     private static final String GROUPOPS = "groupOps";
+    private static final String GROUP = "group";
     private static final String COLUMNGROUP = "columnGroup";
     private static final String GROUPSTRATEGY = "groupStrategy";
     private static final String MAXINTERVALS = "maxIntervals";
@@ -86,6 +89,7 @@ public class DataSetLookupJSONMarshaller {
     private static final String JOIN = "join";
 
     private static final String SORTOPS = "sortOps";
+    private static final String SORT = "sort";
     private static final String SORTORDER = "sortOrder";
 
     private static Map<String, Collection<String>> _keysAliasMap = new HashMap<String, Collection<String>>();
@@ -96,6 +100,11 @@ public class DataSetLookupJSONMarshaller {
         _keysAliasMap.put(SOURCE, Arrays.asList(SOURCE, "sourceId"));
         _keysAliasMap.put(FUNCTION_LABEL_VALUE, Arrays.asList(FUNCTION_LABEL_VALUE, "labelValue"));
         _keysAliasMap.put(SELECTEDINTERVALS, Arrays.asList(SELECTEDINTERVALS, "selectedIntervals"));
+        _keysAliasMap.put(GROUPFUNCTIONS, Arrays.asList(GROUPFUNCTIONS, "functions"));
+        _keysAliasMap.put(GROUPOPS, Arrays.asList(GROUPOPS, GROUP));
+        _keysAliasMap.put(SORTOPS, Arrays.asList(SORTOPS, SORT));
+        _keysAliasMap.put(FILTEROPS, Arrays.asList(FILTEROPS, FILTER));
+        _keysAliasMap.put(SORTORDER, Arrays.asList(SORTORDER, "order"));
     }
 
     private static DataSetLookupJSONMarshaller SINGLETON = new DataSetLookupJSONMarshaller();
@@ -122,10 +131,11 @@ public class DataSetLookupJSONMarshaller {
 
     public JsonObject toJson(DataSetLookup dataSetLookup) throws JsonException {
         JsonObject json = Json.createObject();
-        if ( dataSetLookup != null ) {
+        if (dataSetLookup != null) {
             String uuid = dataSetLookup.getDataSetUUID();
 
-            if (uuid != null && !uuid.trim().isEmpty()) json.put(UUID, uuid);
+            if (uuid != null && !uuid.trim().isEmpty())
+                json.put(UUID, uuid);
             json.put(ROWCOUNT, Integer.toString(dataSetLookup.getNumberOfRows()));
             json.put(ROWOFFSET, Integer.toString(dataSetLookup.getRowOffset()));
 
@@ -146,11 +156,11 @@ public class DataSetLookupJSONMarshaller {
     }
 
     public JsonArray formatFilterOperations(List<DataSetFilter> filterOps) throws JsonException {
-        if ( filterOps.isEmpty() ) {
+        if (filterOps.isEmpty()) {
             return null;
         }
         // There should be only one DataSetFilter
-        return formatColumnFilters(filterOps.get( 0 ).getColumnFilterList());
+        return formatColumnFilters(filterOps.get(0).getColumnFilterList());
     }
 
     public JsonArray formatColumnFilters(List<ColumnFilter> columnFilters) throws JsonException {
@@ -164,16 +174,16 @@ public class DataSetLookupJSONMarshaller {
     }
 
     public JsonObject formatColumnFilter(ColumnFilter columnFilter) throws JsonException {
-        if ( columnFilter == null ) return null;
+        if (columnFilter == null)
+            return null;
         JsonObject colFilterJson = Json.createObject();
         // LogicalExprFilter o CoreFunctionFilter
-        if ( columnFilter instanceof LogicalExprFilter ) {
+        if (columnFilter instanceof LogicalExprFilter) {
             LogicalExprFilter lef = (LogicalExprFilter) columnFilter;
             colFilterJson.put(COLUMN, lef.getColumnId());
             colFilterJson.put(FUNCTION_TYPE, lef.getLogicalOperator().toString());
             colFilterJson.put(FUNCTION_ARGS, formatColumnFilters(lef.getLogicalTerms()));
-        }
-        else if (columnFilter instanceof CoreFunctionFilter) {
+        } else if (columnFilter instanceof CoreFunctionFilter) {
             CoreFunctionFilter cff = (CoreFunctionFilter) columnFilter;
             colFilterJson.put(COLUMN, cff.getColumnId());
             colFilterJson.put(FUNCTION_TYPE, cff.getType().toString());
@@ -184,7 +194,7 @@ public class DataSetLookupJSONMarshaller {
                 JsonValue jsonParam = formatValue(param);
                 paramsJsonArray.set(paramCounter++, jsonParam);
             }
-            colFilterJson.put(FUNCTION_ARGS, paramsJsonArray );
+            colFilterJson.put(FUNCTION_ARGS, paramsJsonArray);
 
         } else {
             throw new IllegalArgumentException("Unsupported column filter");
@@ -223,13 +233,16 @@ public class DataSetLookupJSONMarshaller {
         JsonObject columnGroupJson = Json.createObject();
         columnGroupJson.put(SOURCE, columnGroup.getSourceId() != null ? columnGroup.getSourceId() : null);
         columnGroupJson.put(COLUMN, columnGroup.getColumnId() != null ? columnGroup.getColumnId() : null);
-        columnGroupJson.put(GROUPSTRATEGY, columnGroup.getStrategy() != null ? columnGroup.getStrategy().toString() : null);
-        columnGroupJson.put(MAXINTERVALS, Integer.toString( columnGroup.getMaxIntervals()));
+        columnGroupJson.put(GROUPSTRATEGY, columnGroup.getStrategy() != null ? columnGroup.getStrategy().toString()
+                : null);
+        columnGroupJson.put(MAXINTERVALS, Integer.toString(columnGroup.getMaxIntervals()));
         columnGroupJson.put(INTERVALSIZE, columnGroup.getIntervalSize() != null ? columnGroup.getIntervalSize() : null);
-        columnGroupJson.put(EMPTYINTERVALS, columnGroup.areEmptyIntervalsAllowed() ? "true" : "false" );
+        columnGroupJson.put(EMPTYINTERVALS, columnGroup.areEmptyIntervalsAllowed() ? "true" : "false");
         columnGroupJson.put(ASCENDING, columnGroup.isAscendingOrder() ? "true" : "false");
-        columnGroupJson.put(FIRSTMONTHOFYEAR, columnGroup.getFirstMonthOfYear() != null ? columnGroup.getFirstMonthOfYear().toString() : null);
-        columnGroupJson.put(FIRSTDAYOFWEEK, columnGroup.getFirstDayOfWeek() != null ? columnGroup.getFirstDayOfWeek().toString() : null);
+        columnGroupJson.put(FIRSTMONTHOFYEAR, columnGroup.getFirstMonthOfYear() != null ? columnGroup
+                .getFirstMonthOfYear().toString() : null);
+        columnGroupJson.put(FIRSTDAYOFWEEK, columnGroup.getFirstDayOfWeek() != null ? columnGroup.getFirstDayOfWeek()
+                .toString() : null);
         return columnGroupJson;
     }
 
@@ -252,7 +265,8 @@ public class DataSetLookupJSONMarshaller {
         JsonObject groupFunctionJson = Json.createObject();
         groupFunctionJson.put(SOURCE, groupFunction.getSourceId() != null ? groupFunction.getSourceId() : null);
         groupFunctionJson.put(COLUMN, groupFunction.getColumnId() != null ? groupFunction.getColumnId() : null);
-        groupFunctionJson.put(FUNCTION, groupFunction.getFunction() != null ? groupFunction.getFunction().toString() : null);
+        groupFunctionJson.put(FUNCTION, groupFunction.getFunction() != null ? groupFunction.getFunction().toString()
+                : null);
         return groupFunctionJson;
     }
 
@@ -326,24 +340,32 @@ public class DataSetLookupJSONMarshaller {
     }
 
     public DataSetLookup fromJson(JsonObject json) throws JsonException {
-        if (json == null) {
+        if (json == null ||
+            json.getType() != JsonType.OBJECT ||
+            json.keys() == null ||
+            json.keys().length == 0) {
             return null;
         }
-        DataSetLookup dataSetLookup = new DataSetLookup();
-        dataSetLookup.setDataSetUUID(json.get(UUID) != null ? json.getString(UUID) : null);
+        var dataSetLookup = new DataSetLookup();
+        var uuid = json.getFirst(Arrays.asList(DATASET_UUID, UUID));
+        dataSetLookup.setDataSetUUID(uuid != null ? uuid.asString() : null);
         dataSetLookup.setNumberOfRows(json.get(ROWCOUNT) != null ? Integer.parseInt(json.getString(ROWCOUNT), 10) : -1);
         dataSetLookup.setRowOffset(json.get(ROWOFFSET) != null ? Integer.parseInt(json.getString(ROWOFFSET), 10) : 0);
 
-        List<DataSetOp> dataSetOpList = dataSetLookup.getOperationList();
+        var dataSetOpList = dataSetLookup.getOperationList();
+
+        var filterArray = json.getArray(keySet(FILTEROPS));
+        var groupArray = json.getArray(keySet(GROUPOPS));
+        var sortArray = json.getArray(keySet(SORTOPS));
 
         Collection c = null;
-        if ((c = parseFilterOperations(json.getArray(FILTEROPS))) != null) {
+        if ((c = parseFilterOperations(filterArray)) != null) {
             dataSetOpList.addAll(c);
         }
-        if ((c = parseGroupOperations(json.getArray(GROUPOPS))) != null) {
+        if ((c = parseGroupOperations(groupArray)) != null) {
             dataSetOpList.addAll(c);
         }
-        if ((c = parseSortOperations(json.getArray(SORTOPS))) != null) {
+        if ((c = parseSortOperations(sortArray)) != null) {
             dataSetOpList.addAll(c);
         }
 
@@ -378,19 +400,22 @@ public class DataSetLookupJSONMarshaller {
     }
 
     public List<ColumnFilter> parseColumnFilters(JsonArray columnFiltersJsonArray) {
-        if (columnFiltersJsonArray == null) {
+        if (columnFiltersJsonArray == null || columnFiltersJsonArray.length() == 0) {
             return null;
         }
-        List<ColumnFilter> columnFilters = new ArrayList<ColumnFilter>(columnFiltersJsonArray.length());
+        var columnFilters = new ArrayList<ColumnFilter>(columnFiltersJsonArray.length());
         for (int i = 0; i < columnFiltersJsonArray.length(); i++) {
             // TODO: can be null, if someone puts a {} in the column list
-            columnFilters.add(parseColumnFilter(columnFiltersJsonArray.getObject(i)));
+            var filter = parseColumnFilter(columnFiltersJsonArray.getObject(i));
+            if (filter != null) {
+                columnFilters.add(filter);
+            }
         }
         return columnFilters;
     }
 
     public ColumnFilter parseColumnFilter(JsonObject columnFilterJson) {
-        if (columnFilterJson == null) {
+        if (columnFilterJson == null || columnFilterJson.getType() != JsonType.OBJECT) {
             return null;
         }
 
@@ -398,7 +423,9 @@ public class DataSetLookupJSONMarshaller {
         String functionType = columnFilterJson.getString(keySet(FUNCTION_TYPE));
         JsonArray terms = columnFilterJson.getArray(keySet(FUNCTION_ARGS));
         if (functionType == null) {
-            throw new RuntimeException("Dataset lookup column filter null function type");
+            throw new RuntimeException(
+                    "Data set lookup column filter requires a valid \"function\". Possible values are: " +
+                            enumToString(CoreFunctionType.values()));
         }
 
         if (isCoreFilter(functionType)) {
@@ -418,8 +445,7 @@ public class DataSetLookupJSONMarshaller {
             // Logical expression terms are an an array of column filters
             lef.setLogicalTerms(parseColumnFilters(terms));
             return lef;
-        }
-        else {
+        } else {
             throw new RuntimeException("Dataset lookup column filter wrong type");
         }
     }
@@ -428,7 +454,7 @@ public class DataSetLookupJSONMarshaller {
         if (paramsJsonArray == null) {
             return null;
         }
-        List<Comparable> params = new ArrayList<Comparable>(paramsJsonArray.length());
+        var params = new ArrayList<Comparable>(paramsJsonArray.length());
         for (int i = 0; i < paramsJsonArray.length(); i++) {
             JsonValue jsonValue = paramsJsonArray.get(i);
             params.add(parseValue(jsonValue));
@@ -436,8 +462,8 @@ public class DataSetLookupJSONMarshaller {
         return params;
     }
 
-    public List<DataSetGroup> parseGroupOperations( JsonArray groupOpsJsonArray ) {
-        if (groupOpsJsonArray == null) {
+    public List<DataSetGroup> parseGroupOperations(JsonArray groupOpsJsonArray) {
+        if (groupOpsJsonArray == null || groupOpsJsonArray.length() == 0) {
             return null;
         }
         List<DataSetGroup> dataSetGroups = new ArrayList<DataSetGroup>();
@@ -449,7 +475,7 @@ public class DataSetLookupJSONMarshaller {
     }
 
     public DataSetGroup parseDataSetGroup(JsonObject dataSetGroupJson) {
-        if (dataSetGroupJson == null) {
+        if (dataSetGroupJson == null || dataSetGroupJson.getType() != JsonType.OBJECT) {
             return null;
         }
 
@@ -460,30 +486,43 @@ public class DataSetLookupJSONMarshaller {
             dataSetGroup.setColumnGroup(parseColumnGroup(value));
         }
 
-        List<GroupFunction> groupFunctions = parseGroupFunctions(dataSetGroupJson.getArray(GROUPFUNCTIONS));
+        List<GroupFunction> groupFunctions = parseGroupFunctions(dataSetGroupJson.getArray(keySet(GROUPFUNCTIONS)));
         if (groupFunctions != null) {
-            dataSetGroup.getGroupFunctions().addAll( groupFunctions );
+            dataSetGroup.getGroupFunctions().addAll(groupFunctions);
         }
 
-        dataSetGroup.setSelectedIntervalList(parseSelectedIntervals(dataSetGroupJson.getArray(keySet(SELECTEDINTERVALS))));
+        dataSetGroup.setSelectedIntervalList(parseSelectedIntervals(dataSetGroupJson.getArray(keySet(
+                SELECTEDINTERVALS))));
         dataSetGroup.setJoin(dataSetGroupJson.getBoolean(JOIN));
         return dataSetGroup;
     }
 
-    public ColumnGroup parseColumnGroup( JsonObject columnGroupJson ) {
-        if (columnGroupJson == null) {
+    public ColumnGroup parseColumnGroup(JsonObject columnGroupJson) {
+        if (columnGroupJson == null || columnGroupJson.getType() != JsonType.OBJECT) {
             return null;
         }
-        ColumnGroup columnGroup = new ColumnGroup();
-        columnGroup.setSourceId(columnGroupJson.getString(keySet(SOURCE)));
-        columnGroup.setColumnId(columnGroupJson.getString(keySet(COLUMN)));
-        columnGroup.setStrategy(GroupStrategy.getByName(columnGroupJson.getString(GROUPSTRATEGY)));
-        columnGroup.setMaxIntervals(columnGroupJson.getNumber(MAXINTERVALS, -1).intValue());
-        columnGroup.setIntervalSize(columnGroupJson.getString(INTERVALSIZE));
-        columnGroup.setEmptyIntervalsAllowed(columnGroupJson.getBoolean(EMPTYINTERVALS));
-        columnGroup.setAscendingOrder(columnGroupJson.getBoolean(ASCENDING));
-        columnGroup.setFirstMonthOfYear(Month.getByName(columnGroupJson.getString(FIRSTMONTHOFYEAR)));
-        columnGroup.setFirstDayOfWeek(DayOfWeek.getByName(columnGroupJson.getString(FIRSTDAYOFWEEK)));
+        var columnGroup = new ColumnGroup();
+        if (columnGroupJson.keys() != null && columnGroupJson.keys().length > 0) {
+            var columnId = columnGroupJson.getString(keySet(COLUMN));
+            var sourceId = columnGroupJson.getString(keySet(SOURCE));
+            var groupStrategy = columnGroupJson.getString(GROUPSTRATEGY);
+            if (sourceId == null && columnId == null) {
+                throw new IllegalArgumentException("The field \"source\" or \"column\" is required for column group");
+            }
+            columnGroup.setSourceId(sourceId == null ? columnId : sourceId);
+            columnGroup.setColumnId(columnId == null ? columnGroup.getSourceId() : columnId);
+            columnGroup.setStrategy(groupStrategy == null ? GroupStrategy.DYNAMIC : GroupStrategy.getByName(
+                    columnGroupJson
+                            .getString(GROUPSTRATEGY)));
+            columnGroup.setMaxIntervals(columnGroupJson.getNumber(MAXINTERVALS, -1).intValue());
+            columnGroup.setIntervalSize(columnGroupJson.getString(INTERVALSIZE));
+            columnGroup.setEmptyIntervalsAllowed(columnGroupJson.getBoolean(EMPTYINTERVALS));
+            columnGroup.setAscendingOrder(columnGroupJson.getBoolean(ASCENDING));
+            columnGroup.setFirstMonthOfYear(Month.getByName(columnGroupJson.getString(FIRSTMONTHOFYEAR)));
+            columnGroup.setFirstDayOfWeek(DayOfWeek.getByName(columnGroupJson.getString(FIRSTDAYOFWEEK)));
+        } else {
+            throw new IllegalArgumentException("At least \"source\" or \"column\" field is required for column group");
+        }
         return columnGroup;
     }
 
@@ -498,14 +537,22 @@ public class DataSetLookupJSONMarshaller {
         return groupFunctions;
     }
 
-    public GroupFunction parseGroupFunction( JsonObject groupFunctionJson ) {
-        if (groupFunctionJson == null) {
+    public GroupFunction parseGroupFunction(JsonObject groupFunctionJson) {
+        if (groupFunctionJson == null || groupFunctionJson.getType() != JsonType.OBJECT) {
             return null;
         }
-        GroupFunction groupFunction = new GroupFunction();
-        groupFunction.setSourceId(groupFunctionJson.getString(keySet(SOURCE)));
+        var groupFunction = new GroupFunction();
+        var sourceId = groupFunctionJson.getString(keySet(SOURCE));
+        var functionTypeStr = groupFunctionJson.getString(keySet(FUNCTION));
+        var functionType = AggregateFunctionType.getByName(functionTypeStr);
+        if (functionTypeStr != null && functionType == null) {
+            throw new IllegalArgumentException("Function " + functionTypeStr +
+                    " is invalid. The following values are supported for \"function\": \n" + enumToString(
+                            AggregateFunctionType.values()));
+        }
+        groupFunction.setSourceId(sourceId);
         groupFunction.setColumnId(groupFunctionJson.getString(keySet(COLUMN)));
-        groupFunction.setFunction(AggregateFunctionType.getByName(groupFunctionJson.getString(keySet(FUNCTION))));
+        groupFunction.setFunction(functionType);
         return groupFunction;
     }
 
@@ -514,7 +561,7 @@ public class DataSetLookupJSONMarshaller {
             return null;
         }
         List<Interval> intervalList = new ArrayList<Interval>(selectedIntervalsJson.length());
-        for ( int i = 0; i < selectedIntervalsJson.length(); i++) {
+        for (int i = 0; i < selectedIntervalsJson.length(); i++) {
             intervalList.add(parseInterval(selectedIntervalsJson.getObject(i)));
         }
         return intervalList;
@@ -534,12 +581,14 @@ public class DataSetLookupJSONMarshaller {
     }
 
     public List<DataSetSort> parseSortOperations(JsonArray columnSortsJsonArray) {
-        if (columnSortsJsonArray == null) {
+        if (columnSortsJsonArray == null ||
+            columnSortsJsonArray.getType() != JsonType.ARRAY ||
+            columnSortsJsonArray.length() == 0) {
             return null;
         }
-        List<DataSetSort> dataSetSorts = new ArrayList<DataSetSort>();
+        var dataSetSorts = new ArrayList<DataSetSort>();
         // There's only one DataSetSort, the json array is an array of column sorts
-        DataSetSort dataSetSort = new DataSetSort();
+        var dataSetSort = new DataSetSort();
         dataSetSorts.add(dataSetSort);
 
         List<ColumnSort> columnSorts = parseColumnSorts(columnSortsJsonArray);
@@ -555,18 +604,33 @@ public class DataSetLookupJSONMarshaller {
         }
         List<ColumnSort> columnSorts = new ArrayList<ColumnSort>(columnSortsJsonArray.length());
         for (int i = 0; i < columnSortsJsonArray.length(); i++) {
-            columnSorts.add(parseColumnSort(columnSortsJsonArray.getObject(i)));
+            var columnSort = parseColumnSort(columnSortsJsonArray.getObject(i));
+            if (columnSort != null) {
+                columnSorts.add(columnSort);
+            }
         }
         return columnSorts;
     }
 
     public ColumnSort parseColumnSort(JsonObject columnSortJson) {
-        if (columnSortJson == null) {
+        if (columnSortJson == null ||
+            columnSortJson.getType() != JsonType.OBJECT ||
+            columnSortJson.keys() == null ||
+            columnSortJson.keys().length == 0) {
             return null;
         }
-        ColumnSort columnSort = new ColumnSort();
-        columnSort.setColumnId(columnSortJson.getString(COLUMN));
-        columnSort.setOrder(SortOrder.getByName(columnSortJson.getString(SORTORDER)));
+        var columnSort = new ColumnSort();
+        var column = columnSortJson.getString(COLUMN);
+        var sortOrderStr = columnSortJson.getString(keySet(SORTORDER));
+        if (column == null) {
+            throw new IllegalArgumentException("Field \"column\" is required for sorting.");
+        }
+        columnSort.setColumnId(column);
+        var sortOrder = SortOrder.getByName(sortOrderStr);
+        if (sortOrder == null) {
+            sortOrder = SortOrder.ASCENDING;
+        }
+        columnSort.setOrder(sortOrder);
         return columnSort;
     }
 
@@ -587,7 +651,7 @@ public class DataSetLookupJSONMarshaller {
      * @return yyyy-MM-dd HH-mm-ss
      */
     public String formatDate(Date d) {
-        return (1900+d.getYear()) + "-" +
+        return (1900 + d.getYear()) + "-" +
                 twoDigits(d.getMonth() + 1) + "-" +
                 twoDigits(d.getDate()) + " " +
                 twoDigits(d.getHours()) + ":" +
@@ -615,13 +679,12 @@ public class DataSetLookupJSONMarshaller {
                 day < 1 || day > 31 ||
                 hour > 23 || hour < 0 ||
                 min > 59 || min < 0 ||
-                sec> 59 || sec < 0) {
+                sec > 59 || sec < 0) {
 
                 throw new JsonException("Wrong date format: " + str);
             }
-            return new Date(year-1900, month, day, hour, min, sec);
-        }
-        catch (NumberFormatException e) {
+            return new Date(year - 1900, month, day, hour, min, sec);
+        } catch (NumberFormatException e) {
             throw new JsonException("Wrong date format: " + str);
         }
     }
@@ -665,10 +728,14 @@ public class DataSetLookupJSONMarshaller {
         try {
             // Date
             return parseDate(jsonValue.asString());
-        }
-        catch (Exception e1) {
+        } catch (Exception e1) {
             // String
             return jsonValue.asString();
         }
+    }
+
+    private String enumToString(Enum<?>[] enums) {
+        return Arrays.stream(enums).map(Enum::name).collect(Collectors
+                .joining("\n"));
     }
 }

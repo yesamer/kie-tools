@@ -23,29 +23,50 @@ import javax.inject.Inject;
 import elemental2.dom.DomGlobal;
 import elemental2.dom.MessageEvent;
 import jsinterop.base.Js;
+import org.dashbuilder.client.screens.RouterScreen;
+import org.dashbuilder.displayer.external.ExternalComponentMessage;
 
 @ApplicationScoped
 public class RuntimeModelContentListener {
 
     private static final String READY = "ready";
-    
+
     @Inject
     RuntimeCommunication runtimeCommunication;
 
+    @Inject
+    RouterScreen routerScreen;
+
     public void start(Consumer<String> contentConsumer) {
-        DomGlobal.window.addEventListener("message", evt -> {
-            MessageEvent<String> message = Js.cast(evt);
-            try {
-                if (!READY.equals(message.data)) {
-                    contentConsumer.accept(message.data);
-                    runtimeCommunication.showSuccess("Dashboard Updated");
+        setupBridge(contentConsumer);
+        if (!hasEnvelope()) {
+            DomGlobal.window.addEventListener("message", evt -> {
+                MessageEvent<Object> message = Js.cast(evt);
+
+                if (!READY.equals(message.data) && !(message.data instanceof ExternalComponentMessage)) {
+                    contentConsumer.accept((String) message.data);
+                    DomGlobal.console.log("Dashboard Updated");
                 }
-            } catch (Exception e) {
-                runtimeCommunication.showWarning("Error loading content: " + e.getMessage(), e);
+
+            });
+            if (DomGlobal.window.parent != null) {
+                DomGlobal.window.parent.postMessage(READY, null);
             }
-        });
-        if (DomGlobal.window.parent != null) {
-            DomGlobal.window.parent.postMessage(READY, null);
         }
     }
+
+    private boolean hasEnvelope() {
+        return DomGlobal.document.getElementById("envelope-app") != null;
+    }
+
+    private static native void setupBridge(Consumer<String> contentListener) /*-{
+        $wnd.setDashbuilderContent = function (content) {
+            contentListener.@java.util.function.Consumer::accept(Ljava/lang/Object;)(content);        
+        };
+        if ($wnd.dashbuilderReady) {
+            $wnd.dashbuilderReady();
+        }
+        ;
+    }-*/;
+
 }

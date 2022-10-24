@@ -26,11 +26,10 @@ import { act } from "react-dom/test-utils";
 import { fireEvent } from "@testing-library/react";
 import { BoxedExpressionGlobalContext } from "@kie-tools/boxed-expression-component/dist/context";
 import {
-  BoxedExpressionEditorGWTService,
   BoxedExpressionProvider,
   BoxedExpressionProviderProps,
-  DataType,
-} from "@kie-tools/boxed-expression-component";
+} from "@kie-tools/boxed-expression-component/dist/components";
+import { BoxedExpressionEditorGWTService, DataType } from "@kie-tools/boxed-expression-component/dist/api";
 
 global.console = { ...global.console, warn: () => ({}) };
 
@@ -110,7 +109,7 @@ export function usingTestingBoxedExpressionI18nContext(
   };
   return {
     ctx: usedCtx,
-    wrapper: (
+    wrapper: wrapComponentInContext(
       <I18nDictionariesProvider defaults={usedCtx.defaults} dictionaries={usedCtx.dictionaries} ctx={usedCtx.ctx}>
         {usedCtx.children}
       </I18nDictionariesProvider>
@@ -161,6 +160,8 @@ export function wrapComponentInContext(
         pmmlParams,
         supervisorHash: "",
         setSupervisorHash: jest.fn,
+        isContextMenuOpen: false,
+        setIsContextMenuOpen: jest.fn,
         editorRef: { current: document.body as HTMLDivElement },
         currentlyOpenedHandlerCallback: jest.fn,
         setCurrentlyOpenedHandlerCallback: jest.fn,
@@ -210,6 +211,11 @@ export async function updateElementViaPopover(
   });
   await act(async () => {
     fireEvent.blur(inputElement);
+    await flushPromises();
+    jest.runAllTimers();
+  });
+  await act(async () => {
+    fireEvent.click(baseElement);
     await flushPromises();
     jest.runAllTimers();
   });

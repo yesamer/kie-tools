@@ -16,25 +16,18 @@
 
 import * as React from "react";
 import * as ReactDOM from "react-dom";
-import { useCallback, useState } from "react";
 import "@patternfly/react-core/dist/styles/base.css";
 import "./index.css";
-import { ImportJavaClasses, ImportJavaClassGWTService } from "../src";
+import { ImportJavaClasses, GWTLayerService, JavaCodeCompletionService } from "../src";
 
 const Showcase: React.FunctionComponent = () => {
-  const LSP_SERVER_NOT_AVAILABLE = "Java LSP Server is not available. Please install Java Extension";
-  const [buttonDisableStatus, setButtonDisableStatus] = useState(true);
-  const [buttonTooltipMessage, setButtonTooltipMessage] = useState(LSP_SERVER_NOT_AVAILABLE);
-  const onSelectChange = useCallback((event) => setButtonDisableStatus(event.target.value === "true"), []);
-  const onInputChange = useCallback((event) => setButtonTooltipMessage(event.target.value), []);
-  /* This function temporary mocks a call to the LSP service method getClasses */
-  const lspGetClassServiceMocked = (value: string) => {
-    /* Mocked data retrieved from LSP Service */
-    const booClassesList = ["org.kie.test.kogito.Book", "org.kie.test.kogito.Boom"];
-    const bookClassesList = ["org.kie.test.kogito.Book"];
-    const boomClassesList = ["org.kie.test.kogito.Boom"];
+  const getJavaCodeCompletionClassesMock = async (value: string) => {
+    const booClassesList = [{ fqcn: "org.kie.test.kogito.Book" }, { fqcn: "org.kie.test.kogito.Boom" }];
+    const bookClassesList = [{ fqcn: "org.kie.test.kogito.Book" }];
+    const boomClassesList = [{ fqcn: "org.kie.test.kogito.Boom" }];
 
-    /* Temporary mocks managing */
+    await delay();
+
     if (value === "Boo") {
       return booClassesList;
     } else if (value === "Book") {
@@ -45,21 +38,31 @@ const Showcase: React.FunctionComponent = () => {
       return [];
     }
   };
-  const lspGetClassFieldsServiceMocked = async (className: string) => {
-    /* Mocked data retrieved from LSP Service */
-    const bookClassFieldsList = new Map<string, string>();
-    bookClassFieldsList.set("author", "org.kie.test.kogito.Author");
-    bookClassFieldsList.set("title", "java.lang.String");
-    bookClassFieldsList.set("year", "java.lang.Integer");
-    bookClassFieldsList.set("boom", "org.kie.test.kogito.Boom");
-    const boomClassFieldsList = new Map<string, string>();
-    boomClassFieldsList.set("time", "java.util.Date");
-    boomClassFieldsList.set("big", "java.lang.Boolean");
-    boomClassFieldsList.set("color", "java.lang.String");
-    boomClassFieldsList.set("countdown", "java.time.Duration");
-    const authorClassFieldsList = new Map<string, string>();
-    authorClassFieldsList.set("age", "int");
-    authorClassFieldsList.set("name", "java.lang.String");
+
+  const getJavaCodeCompletionFieldsMock = async (className: string) => {
+    const bookClassFieldsList = [
+      { fqcn: "com.Book", accessor: "author", type: "org.kie.test.kogito.Author" },
+      { fqcn: "com.Book", accessor: "title", type: "java.lang.String" },
+      { fqcn: "com.Book", accessor: "year", type: "java.lang.Integer" },
+      { fqcn: "com.Book", accessor: "boom", type: "org.kie.test.kogito.Boom" },
+      { fqcn: "com.Book", accessor: "serialVersionUID", type: "long" },
+      { fqcn: "com.Book", accessor: "getClass()", type: "java.lang.Class<?>" },
+      { fqcn: "com.Book", accessor: "getOtherBookList()", type: "java.util.List<java.lang.String>" },
+      { fqcn: "com.Book", accessor: "getTopicsMap()", type: "java.util.Map<java.lang.String, java.lang.String>" },
+      { fqcn: "com.Boom", accessor: "isAvailable()", type: "java.lang.Boolean" },
+    ];
+    const boomClassFieldsList = [
+      { fqcn: "com.Boom", accessor: "time", type: "java.util.Date" },
+      { fqcn: "com.Boom", accessor: "big", type: "java.lang.Boolean" },
+      { fqcn: "com.Boom", accessor: "color", type: "java.lang.String" },
+      { fqcn: "com.Boom", accessor: "countdown", type: "java.time.Duration" },
+    ];
+    const authorClassFieldsList = [
+      { fqcn: "com.Author", accessor: "age", type: "int" },
+      { fqcn: "com.Author", accessor: "name", type: "java.lang.String" },
+      { fqcn: "com.Author", accessor: "color", type: "java.lang.String" },
+      { fqcn: "com.Author", accessor: "countdown", type: "java.time.Duration" },
+    ];
 
     await delay();
 
@@ -71,49 +74,42 @@ const Showcase: React.FunctionComponent = () => {
     } else if (className === "org.kie.test.kogito.Author") {
       return authorClassFieldsList;
     } else {
-      return new Map<string, string>();
+      return [];
     }
   };
 
-  const delay = () => new Promise((res) => setTimeout(res, Math.random() * (4000 - 750) + 1000));
-
-  const importJavaClassesGWTService: ImportJavaClassGWTService = {
-    handleOnWizardImportButtonClick: (javaClasses) => window.alert("Java Classes sent to editor:" + javaClasses.length),
+  const isLanguageServerAvailableMock = async () => {
+    await delay();
+    return Math.random() < 0.75;
   };
 
-  window.envelopeMock = {
-    lspGetClassServiceMocked: (value: string) => lspGetClassServiceMocked(value),
-    lspGetClassFieldsServiceMocked: (className: string) => lspGetClassFieldsServiceMocked(className),
+  const delay = () => new Promise((res) => setTimeout(res, Math.random() * (3000 - 500) + 1000));
+
+  const gwtLayerService: GWTLayerService = {
+    importJavaClassesInDataTypeEditor: (javaClasses) =>
+      window.alert("Java Classes sent to editor:" + javaClasses.length),
+  };
+
+  const javaCodeCompletionService: JavaCodeCompletionService = {
+    getClasses: getJavaCodeCompletionClassesMock,
+    getFields: getJavaCodeCompletionFieldsMock,
+    isLanguageServerAvailable: isLanguageServerAvailableMock,
   };
 
   return (
     <div className="showcase">
       <p>
-        This showcase demonstrates how the <strong>Import Java Classes</strong> component works. Adding the component to
-        the DOM, will result to render a Button with <em>Import Java Classes</em> label. As default status, the button
-        is disabled with a tooltip reporting the reason. Using the above menu, you can modify the button status and the
-        related tooltip message.
+        This showcase demonstrates how the <strong>Import Java Classes</strong> component works. To simulate Button
+        Enabled/Disabled status, which is managed by the <strong>JavaCodeCompletionService</strong>, this showcase will
+        randomy enable (75%) or disable (25%) the button.
       </p>
       <p>
         To simulate the searching of a Java Classes on the Search box inside the wizard, please use values:
         <em>Boo</em>, <em>Boom</em> or <em>Book</em> as key, which are mocked in this showcase to demonstrate the
         component usage.
       </p>
-      <div className="menu">
-        <strong>Import Java classes button state</strong>
-        <select onChange={onSelectChange}>
-          <option value="true">Disabled</option>
-          <option value="false">Enabled</option>
-        </select>
-        <strong>Tooltip Message (Optional)</strong>
-        <input value={buttonTooltipMessage} onChange={onInputChange} />
-      </div>
       <div className="main">
-        <ImportJavaClasses
-          buttonDisabledStatus={buttonDisableStatus}
-          buttonTooltipMessage={buttonTooltipMessage}
-          importJavaClassesGWTService={importJavaClassesGWTService}
-        />
+        <ImportJavaClasses gwtLayerService={gwtLayerService} javaCodeCompletionService={javaCodeCompletionService} />
       </div>
     </div>
   );

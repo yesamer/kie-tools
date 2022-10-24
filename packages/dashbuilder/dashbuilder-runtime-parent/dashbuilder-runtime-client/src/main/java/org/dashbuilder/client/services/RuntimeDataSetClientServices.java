@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.event.Observes;
 import javax.enterprise.inject.Alternative;
 import javax.inject.Inject;
 import javax.ws.rs.core.HttpHeaders;
@@ -31,10 +32,11 @@ import elemental2.dom.RequestInit;
 import elemental2.dom.Response;
 import elemental2.dom.XMLHttpRequest;
 import elemental2.promise.IThenable;
+import org.dashbuilder.client.RuntimeClientLoader;
 import org.dashbuilder.client.error.DefaultRuntimeErrorCallback;
 import org.dashbuilder.client.error.DefaultRuntimeErrorCallback.DefaultErrorType;
 import org.dashbuilder.client.error.ErrorResponseVerifier;
-import org.dashbuilder.client.external.ExternalDataSetRegister;
+import org.dashbuilder.client.external.ExternalDataSetClientProvider;
 import org.dashbuilder.client.marshalling.ClientDataSetMetadataJSONMarshaller;
 import org.dashbuilder.common.client.error.ClientRuntimeError;
 import org.dashbuilder.dataprovider.DataSetProviderType;
@@ -47,6 +49,7 @@ import org.dashbuilder.dataset.client.DataSetExportReadyCallback;
 import org.dashbuilder.dataset.client.DataSetMetadataCallback;
 import org.dashbuilder.dataset.client.DataSetReadyCallback;
 import org.dashbuilder.dataset.def.DataSetDef;
+import org.dashbuilder.dataset.events.DataSetDefRemovedEvent;
 import org.dashbuilder.dataset.json.DataSetJSONMarshaller;
 import org.dashbuilder.dataset.json.DataSetLookupJSONMarshaller;
 import org.jboss.errai.common.client.api.RemoteCallback;
@@ -74,7 +77,10 @@ public class RuntimeDataSetClientServices implements DataSetClientServices {
     ClientDataSetManager clientDataSetManager;
 
     @Inject
-    ExternalDataSetRegister externalDataSetRegister;
+    RuntimeClientLoader loader;
+
+    @Inject
+    ExternalDataSetClientProvider externalDataSetClientProvider;
 
     Map<String, DataSetMetadata> metadataCache = new HashMap<>();
 
@@ -133,21 +139,24 @@ public class RuntimeDataSetClientServices implements DataSetClientServices {
 
     @Override
     public void lookupDataSet(DataSetDef def, DataSetLookup lookup, DataSetReadyCallback listener) throws Exception {
-
         var clientDataSet = clientDataSetManager.lookupDataSet(lookup);
         if (clientDataSet != null) {
             listener.callback(clientDataSet);
             return;
         }
 
-        externalDataSetRegister.fetchAndRegister(lookup.getDataSetUUID(),
+        externalDataSetClientProvider.fetchAndRegister(lookup.getDataSetUUID(),
                 lookup,
                 new DataSetReadyCallback() {
 
                     @Override
                     public boolean onError(ClientRuntimeError error) {
-                        DomGlobal.console.log("Error retrieving dataset from client, trying from backend");
-                        backendLookup(def, lookup, listener);
+                        if (loader.isEditor()) {
+                            listener.onError(error);
+                        } else {
+                            DomGlobal.console.debug("Error retrieving dataset from client, trying from backend");
+                            backendLookup(def, lookup, listener);
+                        }
                         return false;
                     }
 
@@ -207,24 +216,58 @@ public class RuntimeDataSetClientServices implements DataSetClientServices {
         request.setHeaders(headers);
         fetch(LOOKUP_ENDPOINT, request).then((Response response) -> {
             verifier.verify(response);
-            response.text().then(responseText -> {
-                if (response.status == HttpResponseCodes.SC_INTERNAL_SERVER_ERROR) {
-                    listener.onError(new ClientRuntimeError("Not able to retrieve data set: " + getName(lookup, def),
-                            new Exception(responseText)));
-                } else if (response.status == HttpResponseCodes.SC_NOT_FOUND) {
-                    listener.onError(new ClientRuntimeError("Data Set not found: " + getName(lookup, def),
-                            new Exception(responseText)));
-                } else {
-                    var dataSet = parseDataSet(responseText);
-                    listener.callback(dataSet);
-                }
-                return null;
-            }, error -> {
-                listener.onError(new ClientRuntimeError("Error reading data set content: " + error));
-                return null;
-            });
+            response.text().then(responseText -> handleResponseText(def, lookup, listener, response, responseText),
+                    error -> {
+                        listener.onError(new ClientRuntimeError("Error reading data set content: " + error));
+                        return null;
+                    });
             return null;
         }).catch_(this::handleError);
+    }
+
+    void onDataSetDefRemovedEvent(@Observes DataSetDefRemovedEvent evt) {
+        if (evt.getDataSetDef() != null) {
+            var uuid = evt.getDataSetDef().getUUID();
+            metadataCache.remove(uuid);
+            externalDataSetClientProvider.unregister(uuid);
+            clientDataSetManager.removeDataSet(uuid);
+        }
+
+    }
+
+    private IThenable<Object> handleResponseText(DataSetDef def,
+                                                 DataSetLookup lookup,
+                                                 DataSetReadyCallback listener,
+                                                 Response response,
+                                                 String responseText) {
+
+        switch (response.status) {
+            case (HttpResponseCodes.SC_INTERNAL_SERVER_ERROR):
+                listener.onError(buildError("Not able to retrieve data set: " + getName(lookup, def),
+                        responseText));
+                break;
+            case (HttpResponseCodes.SC_NOT_FOUND):
+                listener.onError(buildError("Data Set not found: " + getName(lookup, def), responseText));
+                break;
+            default:
+                DataSet dataSet = null;
+                try {
+                    dataSet = parseDataSet(responseText);
+                } catch (Exception e) {
+                    listener.onError(new ClientRuntimeError("Error reading data set content", e));
+                }
+
+                if (dataSet != null) {
+                    listener.callback(dataSet);
+                } else {
+                    listener.onError(new ClientRuntimeError("Not able to retrieve the dataset. Content is not valid."));
+                }
+        }
+        return null;
+    }
+
+    private ClientRuntimeError buildError(String message, String responseText) {
+        return new ClientRuntimeError(message, new Exception(responseText));
     }
 
     private DataSetMetadata parseMetadata(String jsonContent) {

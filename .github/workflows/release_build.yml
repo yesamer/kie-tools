@@ -24,7 +24,7 @@ on:
       runners:
         type: string
         required: false
-        default: '{"dmn_dev_sandbox_image":"false","kie_sandbox_image":"false","kie_sandbox_extended_services_image":"false","cors_proxy_image":"false","online_editor":"false","chrome_extension":"false","vscode_extensions_dev":"false","vscode_extensions_prod":"false","desktop":"false","npm_packages":"false","standalone_editors_cdn":"false","extended_services":"false","dashbuilder":"false","dashbuilder_images":"false"}'
+        default: '{"dmn_dev_sandbox_image":"false","kie_sandbox_image":"false","kie_sandbox_extended_services_image":"false","cors_proxy_image":"false","online_editor":"false","chrome_extensions":"false","vscode_extensions_dev":"false","vscode_extensions_prod":"false","desktop":"false","npm_packages":"false","standalone_editors_cdn":"false","extended_services":"false","dashbuilder":"false","dashbuilder_images":"false","serverless_logic_sandbox":"false","serverless_logic_sandbox_base_image":"false","openjdk11_mvn_image":"false","kn_plugin_workflow":"false"}'
     secrets:
       kie_tools_bot_token:
         required: false
@@ -40,6 +40,8 @@ on:
         required: false
       chrome_extension_id:
         required: false
+      swf_chrome_extension_id:
+        required: false
       kiegroup_npm_token:
         required: false
       openshift_server:
@@ -48,10 +50,10 @@ on:
         required: false
 
 env:
-  KIE_TOOLS_BUILD_lint: "false"
-  KIE_TOOLS_BUILD_test: "false"
-  KIE_TOOLS_BUILD_testIT: "false"
-  KIE_TOOLS_BUILD_docker: "true"
+  KIE_TOOLS_BUILD__runLinters: "false"
+  KIE_TOOLS_BUILD__runTests: "false"
+  KIE_TOOLS_BUILD__runIntegrationTests: "false"
+  KIE_TOOLS_BUILD__buildContainerImages: "true"
   OPENSHIFT_NAMESPACE: "kie-sandbox"
   OPENSHIFT_PART_OF: "kie-sandbox-app"
 
@@ -65,7 +67,7 @@ jobs:
       kie_sandbox_extended_services_image: ${{ steps.set_runners.outputs.kie_sandbox_extended_services_image }}
       cors_proxy_image: ${{ steps.set_runners.outputs.cors_proxy_image }}
       online_editor: ${{ steps.set_runners.outputs.online_editor }}
-      chrome_extension: ${{ steps.set_runners.outputs.chrome_extension }}
+      chrome_extensions: ${{ steps.set_runners.outputs.chrome_extensions }}
       vscode_extensions_dev: ${{ steps.set_runners.outputs.vscode_extensions_dev }}
       vscode_extensions_prod: ${{ steps.set_runners.outputs.vscode_extensions_prod }}
       desktop: ${{ steps.set_runners.outputs.desktop }}
@@ -74,6 +76,10 @@ jobs:
       extended_services: ${{ steps.set_runners.outputs.extended_services }}
       dashbuilder: ${{ steps.set_runners.outputs.dashbuilder }}
       dashbuilder_images: ${{ steps.set_runners.outputs.dashbuilder_images }}
+      serverless_logic_sandbox: ${{ steps.set_runners.outputs.serverless_logic_sandbox }}
+      serverless_logic_sandbox_base_image: ${{ steps.set_runners.outputs.serverless_logic_sandbox_base_image }}
+      openjdk11_mvn_image: ${{ steps.set_runners.outputs.openjdk11_mvn_image }}
+      kn_plugin_workflow: ${{ steps.set_runners.outputs.kn_plugin_workflow }}
 
     steps:
       - name: "Set Runners"
@@ -85,7 +91,7 @@ jobs:
           echo "::set-output name=kie_sandbox_extended_services_image::${{ fromJSON(inputs.runners).kie_sandbox_extended_services_image }}"
           echo "::set-output name=cors_proxy_image::${{ fromJSON(inputs.runners).cors_proxy_image }}"
           echo "::set-output name=online_editor::${{ fromJSON(inputs.runners).online_editor }}"
-          echo "::set-output name=chrome_extension::${{ fromJSON(inputs.runners).chrome_extension }}"
+          echo "::set-output name=chrome_extensions::${{ fromJSON(inputs.runners).chrome_extensions }}"
           echo "::set-output name=vscode_extensions_dev::${{ fromJSON(inputs.runners).vscode_extensions_dev }}"
           echo "::set-output name=vscode_extensions_prod::${{ fromJSON(inputs.runners).vscode_extensions_prod }}"
           echo "::set-output name=desktop::${{ fromJSON(inputs.runners).desktop }}"
@@ -94,6 +100,10 @@ jobs:
           echo "::set-output name=extended_services::${{ fromJSON(inputs.runners).extended_services }}"
           echo "::set-output name=dashbuilder::${{ fromJSON(inputs.runners).dashbuilder }}"
           echo "::set-output name=dashbuilder_images::${{ fromJSON(inputs.runners).dashbuilder_images }}"
+          echo "::set-output name=serverless_logic_sandbox::${{ fromJSON(inputs.runners).serverless_logic_sandbox }}"
+          echo "::set-output name=serverless_logic_sandbox_base_image::${{ fromJSON(inputs.runners).serverless_logic_sandbox_base_image }}"
+          echo "::set-output name=openjdk11_mvn_image::${{ fromJSON(inputs.runners).openjdk11_mvn_image }}"
+          echo "::set-output name=kn_plugin_workflow::${{ fromJSON(inputs.runners).kn_plugin_workflow }}"
 
       - name: "Print Runners"
         shell: bash
@@ -103,7 +113,7 @@ jobs:
           echo "kie_sandbox_extended_services_image: ${{ steps.set_runners.outputs.kie_sandbox_extended_services_image }}"
           echo "cors_proxy_image: ${{ steps.set_runners.outputs.cors_proxy_image }}"
           echo "online_editor: ${{ steps.set_runners.outputs.online_editor }}"
-          echo "chrome_extension: ${{ steps.set_runners.outputs.chrome_extension }}"
+          echo "chrome_extensions: ${{ steps.set_runners.outputs.chrome_extensions }}"
           echo "vscode_extensions_dev: ${{ steps.set_runners.outputs.vscode_extensions_dev }}"
           echo "vscode_extensions_prod: ${{ steps.set_runners.outputs.vscode_extensions_prod }}"
           echo "desktop: ${{ steps.set_runners.outputs.desktop }}"
@@ -112,6 +122,10 @@ jobs:
           echo "extended_services: ${{ steps.set_runners.outputs.extended_services }}"
           echo "dashbuilder: ${{ steps.set_runners.outputs.dashbuilder }}"
           echo "dashbuilder_images: ${{ steps.set_runners.outputs.dashbuilder_images }}"
+          echo "serverless_logic_sandbox: ${{ steps.set_runners.outputs.serverless_logic_sandbox }}"
+          echo "serverless_logic_sandbox_base_image: ${{ steps.set_runners.outputs.serverless_logic_sandbox_base_image }}"
+          echo "openjdk11_mvn_image: ${{ steps.set_runners.outputs.openjdk11_mvn_image }}"
+          echo "kn_plugin_workflow: ${{ steps.set_runners.outputs.kn_plugin_workflow }}"
 
   dmn_dev_sandbox_image:
     env:
@@ -127,17 +141,13 @@ jobs:
     runs-on: ubuntu-latest
     needs: [extract_runners]
     steps:
-      - name: "Checkout kie-tools"
-        uses: actions/checkout@v2
+      - name: "Checkout @ GitHub default"
+        uses: actions/checkout@v3
+
+      - name: "Checkout @ Simulated squashed-merge if PR"
+        uses: ./.github/actions/checkout-pr
         with:
           ref: ${{ inputs.base_ref }}
-          fetch-depth: 0
-
-      - name: "Setup kie-tools-bot"
-        uses: ./.github/actions/setup-kie-tools-bot
-
-      - name: "Merge PR changes"
-        uses: ./.github/actions/merge-pr-changes
 
       - name: "Cache Maven packages"
         uses: actions/cache@v2
@@ -147,14 +157,19 @@ jobs:
           restore-keys: ${{ runner.os }}-dmn-dev-sandbox-deployment-base-image-m2
 
       - name: "Setup environment"
+        id: setup_env
         uses: ./.github/actions/setup-env
+
+      - name: "Bootstrap"
+        id: bootstrap
+        uses: ./.github/actions/bootstrap
         with:
-          os: ubuntu-latest
+          pnpm_filter_string: -F @kie-tools/dmn-dev-sandbox-deployment-base-image...
 
       - name: "Build"
         shell: bash
         run: |
-          lerna run build:prod --scope=@kie-tools/dmn-dev-sandbox-deployment-base-image --include-dependencies --stream
+          pnpm ${{ steps.bootstrap.outputs.pnpm_filter_string }} build:prod
 
       - name: "Push dmn-dev-sandbox-deployment-base-image to quay.io"
         if: ${{ !inputs.dry_run }}
@@ -192,27 +207,28 @@ jobs:
     runs-on: ubuntu-latest
     needs: [extract_runners, dmn_dev_sandbox_image, kie_sandbox_extended_services_image, cors_proxy_image]
     steps:
-      - name: "Checkout kie-tools"
-        uses: actions/checkout@v2
+      - name: "Checkout @ GitHub default"
+        uses: actions/checkout@v3
+
+      - name: "Checkout @ Simulated squashed-merge if PR"
+        uses: ./.github/actions/checkout-pr
         with:
           ref: ${{ inputs.base_ref }}
-          fetch-depth: 0
-
-      - name: "Setup kie-tools-bot"
-        uses: ./.github/actions/setup-kie-tools-bot
-
-      - name: "Merge PR changes"
-        uses: ./.github/actions/merge-pr-changes
 
       - name: "Setup environment"
+        id: setup_env
         uses: ./.github/actions/setup-env
+
+      - name: "Bootstrap"
+        id: bootstrap
+        uses: ./.github/actions/bootstrap
         with:
-          os: ubuntu-latest
+          pnpm_filter_string: -F @kie-tools/kie-sandbox-image...
 
       - name: "Build"
         shell: bash
         run: |
-          lerna run build:prod --scope=@kie-tools/kie-sandbox-image --include-dependencies --stream
+          pnpm ${{ steps.bootstrap.outputs.pnpm_filter_string }} build:prod
 
       - name: "Push kie-sandbox-image to quay.io"
         if: ${{ !inputs.dry_run }}
@@ -261,27 +277,28 @@ jobs:
     runs-on: ubuntu-latest
     needs: [extract_runners]
     steps:
-      - name: "Checkout kie-tools"
-        uses: actions/checkout@v2
+      - name: "Checkout @ GitHub default"
+        uses: actions/checkout@v3
+
+      - name: "Checkout @ Simulated squashed-merge if PR"
+        uses: ./.github/actions/checkout-pr
         with:
           ref: ${{ inputs.base_ref }}
-          fetch-depth: 0
-
-      - name: "Setup kie-tools-bot"
-        uses: ./.github/actions/setup-kie-tools-bot
-
-      - name: "Merge PR changes"
-        uses: ./.github/actions/merge-pr-changes
 
       - name: "Setup environment"
+        id: setup_env
         uses: ./.github/actions/setup-env
+
+      - name: "Bootstrap"
+        id: bootstrap
+        uses: ./.github/actions/bootstrap
         with:
-          os: ubuntu-latest
+          pnpm_filter_string: -F @kie-tools/kie-sandbox-extended-services-image...
 
       - name: "Build"
         shell: bash
         run: |
-          lerna run build:prod --scope=@kie-tools/kie-sandbox-extended-services-image --include-dependencies --stream
+          pnpm ${{ steps.bootstrap.outputs.pnpm_filter_string }} build:prod
 
       - name: "Push kie-sandbox-extended-services-image to quay.io"
         if: ${{ !inputs.dry_run }}
@@ -322,27 +339,28 @@ jobs:
     runs-on: ubuntu-latest
     needs: [extract_runners]
     steps:
-      - name: "Checkout kie-tools"
-        uses: actions/checkout@v2
+      - name: "Checkout @ GitHub default"
+        uses: actions/checkout@v3
+
+      - name: "Checkout @ Simulated squashed-merge if PR"
+        uses: ./.github/actions/checkout-pr
         with:
           ref: ${{ inputs.base_ref }}
-          fetch-depth: 0
-
-      - name: "Setup kie-tools-bot"
-        uses: ./.github/actions/setup-kie-tools-bot
-
-      - name: "Merge PR changes"
-        uses: ./.github/actions/merge-pr-changes
 
       - name: "Setup environment"
+        id: setup_env
         uses: ./.github/actions/setup-env
+
+      - name: "Bootstrap"
+        id: bootstrap
+        uses: ./.github/actions/bootstrap
         with:
-          os: ubuntu-latest
+          pnpm_filter_string: -F @kie-tools/cors-proxy-image...
 
       - name: "Build"
         shell: bash
         run: |
-          lerna run build:prod --scope=@kie-tools/cors-proxy-image --include-dependencies --stream
+          pnpm ${{ steps.bootstrap.outputs.pnpm_filter_string }} build:prod
 
       - name: "Push cors-proxy-image to quay.io"
         if: ${{ !inputs.dry_run }}
@@ -376,6 +394,7 @@ jobs:
       ONLINE_EDITOR__kieSandboxExtendedServicesDownloadUrlWindows: "https://github.com/kiegroup/kie-tools/releases/download/${{ inputs.tag }}/kie_sandbox_extended_services_windows_${{ inputs.tag }}.exe"
       ONLINE_EDITOR__kieSandboxExtendedServicesCompatibleVersion: "${{ inputs.tag }}"
       ONLINE_EDITOR__gtmId: "GTM-PQGMKNW"
+      ONLINE_EDITOR__corsProxyUrl: "https://cors-proxy-kie-sandbox.rhba-0ad6762cc85bcef5745bb684498c2436-0000.us-south.containers.appdomain.cloud"
       DMN_DEV_SANDBOX__baseImageRegistry: "quay.io"
       DMN_DEV_SANDBOX__baseImageAccount: "kie-tools"
       DMN_DEV_SANDBOX__baseImageName: "dmn-dev-sandbox-deployment-base-image"
@@ -388,24 +407,20 @@ jobs:
     runs-on: ubuntu-latest
     needs: [extract_runners, dmn_dev_sandbox_image, extended_services]
     steps:
-      - name: "Checkout kie-tools"
-        uses: actions/checkout@v2
+      - name: "Checkout @ GitHub default"
+        uses: actions/checkout@v3
+        with:
+          path: kie-tools
+
+      - name: "Checkout @ Simulated squashed-merge if PR"
+        uses: ./kie-tools/.github/actions/checkout-pr
         with:
           ref: ${{ inputs.base_ref }}
-          path: ${{ github.workspace }}/kie-tools
-          fetch-depth: 0
-
-      - name: "Setup kie-tools-bot"
-        uses: ./kie-tools/.github/actions/setup-kie-tools-bot
-
-      - name: "Merge PR changes"
-        uses: ./kie-tools/.github/actions/merge-pr-changes
-        with:
           path: kie-tools
 
       - name: "Checkout kogito-online"
         if: ${{ !inputs.dry_run }}
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           path: ${{ github.workspace }}/kogito-online
           fetch-depth: 0
@@ -421,15 +436,22 @@ jobs:
           restore-keys: ${{ runner.os }}-release-m2
 
       - name: "Setup environment"
+        id: setup_env
         uses: ./kie-tools/.github/actions/setup-env
         with:
-          path: kie-tools
-          os: ubuntu-latest
+          working_dir: kie-tools
+
+      - name: "Bootstrap"
+        id: bootstrap
+        uses: ./kie-tools/.github/actions/bootstrap
+        with:
+          working_dir: kie-tools
+          pnpm_filter_string: -F @kie-tools/online-editor...
 
       - name: "Build"
         working-directory: ${{ github.workspace }}/kie-tools
         run: |
-          lerna run build:prod --scope=@kie-tools/online-editor --include-dependencies --stream
+          pnpm ${{ steps.bootstrap.outputs.pnpm_filter_string }} build:prod
 
       - name: "Deploy to GitHub Pages (kogito-online)"
         if: ${{ !inputs.dry_run }}
@@ -440,7 +462,7 @@ jobs:
         run: |
           echo "Reset deployment dir"
           shopt -s extglob
-          rm -rf -- !("dev"|"editors"|"standalone"|"chrome-extension"|".nojekyll"|"CNAME")
+          rm -rf -- !("dev"|"editors"|"standalone"|"chrome-extension"|"swf-chrome-extension"|".nojekyll"|"CNAME"|"0.23.0")
 
           echo "Copy Editor resources"
           rm -rf $EDITORS_DIR
@@ -462,35 +484,33 @@ jobs:
           git commit -m "Deploy ${{ inputs.tag }} (Editors + Online Editor)"
           git push origin gh-pages
 
-  chrome_extension:
+  chrome_extensions:
     env:
       CHROME_EXTENSION__routerTargetOrigin: "https://kiegroup.github.io"
       CHROME_EXTENSION__routerRelativePath: "kogito-online/chrome-extension/${{ inputs.tag }}"
-      CHROME_EXTENSION__onlineEditorUrl: "https://kiegroup.github.io/kogito-online"
       CHROME_EXTENSION__manifestFile: "manifest.prod.json"
-
-    if: ${{ always() && needs.extract_runners.outputs.chrome_extension == 'true' && (needs.online_editor.result == 'success' || needs.online_editor.result == 'skipped') }}
+      CHROME_EXTENSION__onlineEditorUrl: "https://kiegroup.github.io/kogito-online"
+      SWF_CHROME_EXTENSION__routerTargetOrigin: "https://kiegroup.github.io"
+      SWF_CHROME_EXTENSION__routerRelativePath: "kogito-online/swf-chrome-extension/${{ inputs.tag }}"
+      SWF_CHROME_EXTENSION__manifestFile: "manifest.prod.json"
+    if: ${{ always() && needs.extract_runners.outputs.chrome_extensions == 'true' && (needs.extended_services.result == 'success' || needs.extended_services.result == 'skipped') && (needs.dmn_dev_sandbox_image.result == 'success' || needs.dmn_dev_sandbox_image.result == 'skipped') && (needs.online_editor.result == 'success' || needs.online_editor.result == 'skipped') }}
     runs-on: ubuntu-latest
-    needs: [extract_runners, online_editor]
+    needs: [extract_runners, dmn_dev_sandbox_image, extended_services, online_editor]
     steps:
-      - name: "Checkout kie-tools"
-        uses: actions/checkout@v2
+      - name: "Checkout @ GitHub default"
+        uses: actions/checkout@v3
+        with:
+          path: kie-tools
+
+      - name: "Checkout @ Simulated squashed-merge if PR"
+        uses: ./kie-tools/.github/actions/checkout-pr
         with:
           ref: ${{ inputs.base_ref }}
-          path: ${{ github.workspace }}/kie-tools
-          fetch-depth: 0
-
-      - name: "Setup kie-tools-bot"
-        uses: ./kie-tools/.github/actions/setup-kie-tools-bot
-
-      - name: "Merge PR changes"
-        uses: ./kie-tools/.github/actions/merge-pr-changes
-        with:
           path: kie-tools
 
       - name: "Checkout kogito-online"
         if: ${{ !inputs.dry_run }}
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           path: ${{ github.workspace }}/kogito-online
           fetch-depth: 0
@@ -499,17 +519,24 @@ jobs:
           ref: gh-pages
 
       - name: "Setup environment"
+        id: setup_env
         uses: ./kie-tools/.github/actions/setup-env
         with:
-          path: kie-tools
-          os: ubuntu-latest
+          working_dir: kie-tools
 
-      - name: "Build"
+      - name: "Bootstrap"
+        id: bootstrap
+        uses: ./kie-tools/.github/actions/bootstrap
+        with:
+          working_dir: kie-tools
+          pnpm_filter_string: -F chrome-extension-pack-kogito-kie-editors... -F chrome-extension-serverless-workflow-editor...
+
+      - name: "Build Chrome Extensions"
         working-directory: ${{ github.workspace }}/kie-tools
         run: |
-          lerna run build:prod --scope=chrome-extension-pack-kogito-kie-editors --include-dependencies --stream
+          pnpm ${{ steps.bootstrap.outputs.pnpm_filter_string }} build:prod
 
-      - name: "Upload Chrome Extension"
+      - name: "Upload Chrome Extension for Kogito KIE Editors"
         if: ${{ !inputs.dry_run }}
         uses: actions/upload-release-asset@v1.0.2
         env:
@@ -517,10 +544,10 @@ jobs:
         with:
           upload_url: ${{ inputs.upload_asset_url }}
           asset_path: ${{ github.workspace }}/kie-tools/packages/chrome-extension-pack-kogito-kie-editors/dist/chrome_extension_kogito_kie_editors_${{ inputs.tag }}.zip
-          asset_name: chrome_extension_${{ inputs.tag }}.zip
+          asset_name: chrome_extension_kogito_kie_editors_${{ inputs.tag }}.zip
           asset_content_type: application/zip
 
-      - name: "Deploy to GitHub Pages (kogito-online)"
+      - name: "Deploy Chrome Extension for KIE Editors to GitHub Pages (kogito-online)"
         if: ${{ !inputs.dry_run }}
         working-directory: ${{ github.workspace }}/kogito-online
         shell: bash
@@ -538,62 +565,119 @@ jobs:
 
           echo "Commit changes and push"
           git add .
-          git commit -m "Deploy ${{ inputs.tag }} (Chrome Extension)"
+          git commit -m "Deploy ${{ inputs.tag }} (Chrome Extension for Kogito KIE Editors)"
           git push origin gh-pages
 
-      - name: "Upload Chrome Extension to the Chrome Store"
+      - name: "Upload Chrome Extension for KIE Editors to the Chrome Store"
         if: ${{ !inputs.dry_run }}
-        id: update_extension
+        id: update_extension_kogito_kie_editors
         run: |
           access_token=$(curl -X POST -fsS "https://oauth2.googleapis.com/token" -d "client_id=${{ secrets.google_developer_console_client_id }}&client_secret=${{ secrets.google_developer_console_client_secret }}&refresh_token=${{ secrets.google_developer_console_refresh_token }}&grant_type=refresh_token" | jq -r '.access_token')
           uploadResponse=$(curl -X PUT -sS "https://www.googleapis.com/upload/chromewebstore/v1.1/items/${{ secrets.chrome_extension_id }}" -H "Authorization:Bearer ${access_token}" -H "x-goog-api-version:2" -T ${{ github.workspace }}/kie-tools/packages/chrome-extension-pack-kogito-kie-editors/dist/chrome_extension_kogito_kie_editors_${{ inputs.tag }}.zip)
           echo "$uploadResponse"
           echo ::set-output name=upload_status::$(echo "$uploadResponse" | jq -r '.uploadState')
 
-      - name: "Check Upload"
+      - name: "Check Upload - Chrome Extension for KIE Editors"
         if: ${{ !inputs.dry_run }}
         run: |
-          [ "${{ steps.update_extension.outputs.upload_status }}" == 'SUCCESS' ]
+          [ "${{ steps.update_extension_kogito_kie_editors.outputs.upload_status }}" == 'SUCCESS' ]
 
-      - name: "Publish Chrome Extension for users"
+      - name: "Publish Chrome Extension for KIE Editors for users"
         if: ${{ !inputs.dry_run }}
-        id: publish_extension
+        id: publish_extension_kogito_kie_editors
         run: |
           access_token=$(curl -X POST -fsS "https://oauth2.googleapis.com/token" -d "client_id=${{ secrets.google_developer_console_client_id }}&client_secret=${{ secrets.google_developer_console_client_secret }}&refresh_token=${{ secrets.google_developer_console_refresh_token }}&grant_type=refresh_token" | jq -r '.access_token')
           publishResponse=$(curl -X POST -sS "https://www.googleapis.com/chromewebstore/v1.1/items/${{ secrets.chrome_extension_id }}/publish" -H "Authorization:Bearer ${access_token}" -H "x-goog-api-version:2" -H "Content-Length:0")
           echo "$publishResponse"
           echo ::set-output name=publish_status::$(echo "$publishResponse" | jq -r '.status | .[0]')
 
-      - name: "Check Publish"
+      - name: "Check Publish - Chrome Extension for KIE Editors"
         if: ${{ !inputs.dry_run }}
         run: |
-          [ "${{ steps.publish_extension.outputs.publish_status }}" == 'OK' ] || [ "${{ steps.publish_extension.outputs.publish_status }}" == 'PUBLISHED_WITH_FRICTION_WARNING' ]
+          [ "${{ steps.publish_extension_kogito_kie_editors.outputs.publish_status }}" == 'OK' ] || [ "${{ steps.publish_extension_kogito_kie_editors.outputs.publish_status }}" == 'PUBLISHED_WITH_FRICTION_WARNING' ]
+
+      - name: "Upload Chrome Extension for Serverless Workflow Editor"
+        if: ${{ !inputs.dry_run }}
+        uses: actions/upload-release-asset@v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.gh_token }}
+        with:
+          upload_url: ${{ inputs.upload_asset_url }}
+          asset_path: ${{ github.workspace }}/kie-tools/packages/chrome-extension-serverless-workflow-editor/dist/chrome_extension_serverless_workflow_editor_${{ inputs.tag }}.zip
+          asset_name: chrome_extension_serverless_workflow_editor_${{ inputs.tag }}.zip
+          asset_content_type: application/zip
+
+      - name: "Deploy Chrome Extension for Serverless Workflow Editor to GitHub Pages (kogito-online)"
+        if: ${{ !inputs.dry_run }}
+        working-directory: ${{ github.workspace }}/kogito-online
+        shell: bash
+        env:
+          DEPLOYMENT_DIR: ./swf-chrome-extension/${{ inputs.tag }}
+        run: |
+          echo "Copy Chrome Extension resources"
+          rm -rf $DEPLOYMENT_DIR
+          mkdir -p $DEPLOYMENT_DIR
+          cp -r ${{ github.workspace }}/kie-tools/packages/chrome-extension-serverless-workflow-editor/dist/{fonts,diagram,*-envelope.*,*.bundle.js,*.worker.js} $DEPLOYMENT_DIR
+
+          echo "Commit changes and push"
+          git add .
+          git commit -m "Deploy ${{ inputs.tag }} (Chrome Extension for Serverless Workflow Editor)"
+          git push origin gh-pages
+
+      - name: "Upload Chrome Extension for Serverless Workflow Editor to the Chrome Store"
+        if: ${{ !inputs.dry_run }}
+        id: update_extension_serverless_workflow_editor
+        run: |
+          access_token=$(curl -X POST -fsS "https://oauth2.googleapis.com/token" -d "client_id=${{ secrets.google_developer_console_client_id }}&client_secret=${{ secrets.google_developer_console_client_secret }}&refresh_token=${{ secrets.google_developer_console_refresh_token }}&grant_type=refresh_token" | jq -r '.access_token')
+          uploadResponse=$(curl -X PUT -sS "https://www.googleapis.com/upload/chromewebstore/v1.1/items/${{ secrets.swf_chrome_extension_id }}" -H "Authorization:Bearer ${access_token}" -H "x-goog-api-version:2" -T ${{ github.workspace }}/kie-tools/packages/chrome-extension-serverless-workflow-editor/dist/chrome_extension_serverless_workflow_editor_${{ inputs.tag }}.zip)
+          echo "$uploadResponse"
+          echo ::set-output name=upload_status::$(echo "$uploadResponse" | jq -r '.uploadState')
+
+      - name: "Check Upload - Chrome Extension for Serverless Workflow Editor"
+        if: ${{ !inputs.dry_run }}
+        run: |
+          [ "${{ steps.update_extension_serverless_workflow_editor.outputs.upload_status }}" == 'SUCCESS' ]
+
+      - name: "Publish Chrome Extension for Serverless Workflow Editor for users"
+        if: ${{ !inputs.dry_run }}
+        id: publish_extension_serverless_workflow_editor
+        run: |
+          access_token=$(curl -X POST -fsS "https://oauth2.googleapis.com/token" -d "client_id=${{ secrets.google_developer_console_client_id }}&client_secret=${{ secrets.google_developer_console_client_secret }}&refresh_token=${{ secrets.google_developer_console_refresh_token }}&grant_type=refresh_token" | jq -r '.access_token')
+          publishResponse=$(curl -X POST -sS "https://www.googleapis.com/chromewebstore/v1.1/items/${{ secrets.swf_chrome_extension_id }}/publish" -H "Authorization:Bearer ${access_token}" -H "x-goog-api-version:2" -H "Content-Length:0")
+          echo "$publishResponse"
+          echo ::set-output name=publish_status::$(echo "$publishResponse" | jq -r '.status | .[0]')
+
+      - name: "Check Publish - Chrome Extension for Serverless Workflow Editor"
+        if: ${{ !inputs.dry_run }}
+        run: |
+          [ "${{ steps.publish_extension_serverless_workflow_editor.outputs.publish_status }}" == 'OK' ] || [ "${{ steps.publish_extension_serverless_workflow_editor.outputs.publish_status }}" == 'PUBLISHED_WITH_FRICTION_WARNING' ]
 
   vscode_extensions_dev:
     if: ${{ needs.extract_runners.outputs.vscode_extensions_dev == 'true' }}
     runs-on: ubuntu-latest
     needs: [extract_runners]
     steps:
-      - name: "Checkout"
-        uses: actions/checkout@v2
+      - name: "Checkout @ GitHub default"
+        uses: actions/checkout@v3
+
+      - name: "Checkout @ Simulated squashed-merge if PR"
+        uses: ./.github/actions/checkout-pr
         with:
-          fetch-depth: 0
           ref: ${{ inputs.base_ref }}
 
-      - name: "Setup kie-tools-bot"
-        uses: ./.github/actions/setup-kie-tools-bot
-
-      - name: "Merge PR changes"
-        uses: ./.github/actions/merge-pr-changes
-
       - name: "Setup environment"
+        id: setup_env
         uses: ./.github/actions/setup-env
+
+      - name: "Bootstrap"
+        id: bootstrap
+        uses: ./.github/actions/bootstrap
         with:
-          os: ubuntu-latest
+          pnpm_filter_string: -F vscode-extension-pack-kogito-kie-editors... -F vscode-extension-backend...
 
       - name: "Build"
         run: |
-          lerna run build:prod --scope=vscode-extension-pack-kogito-kie-editors --scope=vscode-extension-backend --scope=vscode-extension-serverless-workflow-editor --include-dependencies --stream
+          pnpm ${{ steps.bootstrap.outputs.pnpm_filter_string }} build:prod
 
       - name: "Upload VS Code Extension (dev) (Ubuntu only)"
         if: ${{ !inputs.dry_run }}
@@ -617,48 +701,39 @@ jobs:
           asset_name: vscode_extension_backend_dev_${{ inputs.tag }}.vsix
           asset_content_type: application/zip
 
-      - name: "Upload Serverless Workflow VS Code Extension (dev) (Ubuntu only)"
-        if: ${{ !inputs.dry_run }}
-        uses: actions/upload-release-asset@v1.0.2
-        env:
-          GITHUB_TOKEN: ${{ secrets.gh_token }}
-        with:
-          upload_url: ${{ inputs.upload_asset_url }}
-          asset_path: ./packages/vscode-extension-serverless-workflow-editor/dist/vscode_extension_serverless_workflow_editor_${{ inputs.tag }}.vsix
-          asset_name: vscode_extension_dev_${{ inputs.tag }}.vsix
-          asset_content_type: application/zip
-
   vscode_extensions_prod:
     if: ${{ needs.extract_runners.outputs.vscode_extensions_prod == 'true' }}
     runs-on: ubuntu-latest
     needs: [extract_runners]
     steps:
-      - name: "Checkout"
-        uses: actions/checkout@v2
+      - name: "Checkout @ GitHub default"
+        uses: actions/checkout@v3
+
+      - name: "Checkout @ Simulated squashed-merge if PR"
+        uses: ./.github/actions/checkout-pr
         with:
-          fetch-depth: 0
           ref: ${{ inputs.base_ref }}
 
-      - name: "Setup kie-tools-bot"
-        uses: ./.github/actions/setup-kie-tools-bot
-
-      - name: "Merge PR changes"
-        uses: ./.github/actions/merge-pr-changes
-
       - name: "Setup environment"
+        id: setup_env
         uses: ./.github/actions/setup-env
+
+      - name: "Bootstrap"
+        id: bootstrap
+        uses: ./.github/actions/bootstrap
         with:
-          os: ubuntu-latest
+          pnpm_filter_string: >-
+            -F vscode-extension-bpmn-editor...
+            -F vscode-extension-dmn-editor...
+            -F vscode-extension-pmml-editor...
+            -F vscode-extension-kogito-bundle...
+            -F vscode-extension-red-hat-business-automation-bundle...
+            -F vscode-extension-serverless-workflow-editor...
+            -F vscode-extension-kie-ba-bundle...
 
       - name: "Build"
         run: |
-          lerna run build:prod --include-dependencies --stream \
-            --scope=vscode-extension-bpmn-editor \
-            --scope=vscode-extension-dmn-editor \
-            --scope=vscode-extension-pmml-editor \
-            --scope=vscode-extension-kogito-bundle \
-            --scope=vscode-extension-red-hat-business-automation-bundle\
-            --scope=vscode-extension-serverless-workflow-editor
+          pnpm ${{ steps.bootstrap.outputs.pnpm_filter_string }} build:prod
 
       - name: "Upload VS Code Extension - BPMN Editor (prod)"
         if: ${{ !inputs.dry_run }}
@@ -704,6 +779,17 @@ jobs:
           asset_name: vscode_extension_kogito_bundle_${{ inputs.tag }}.vsix
           asset_content_type: application/zip
 
+      - name: "Upload VS Code Extension - KIE Business Automation Bundle (prod)"
+        if: ${{ !inputs.dry_run }}
+        uses: actions/upload-release-asset@v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.gh_token }}
+        with:
+          upload_url: ${{ inputs.upload_asset_url }}
+          asset_path: ./packages/vscode-extension-kie-ba-bundle/dist/vscode_extension_kie_ba_bundle_${{ inputs.tag }}.vsix
+          asset_name: vscode_extension_kie_ba_bundle_${{ inputs.tag }}.vsix
+          asset_content_type: application/zip
+
       - name: "Upload VS Code Extension - Red Hat Business Automation Bundle (prod)"
         if: ${{ !inputs.dry_run }}
         uses: actions/upload-release-asset@v1.0.2
@@ -726,6 +812,17 @@ jobs:
           asset_name: vscode_extension_serverless_workflow_editor_${{ inputs.tag }}.vsix
           asset_content_type: application/zip
 
+      - name: "Upload VS Code Extension - Dashbuilder Editor (prod)"
+        if: ${{ !inputs.dry_run }}
+        uses: actions/upload-release-asset@v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.gh_token }}
+        with:
+          upload_url: ${{ inputs.upload_asset_url }}
+          asset_path: ./packages/vscode-extension-dashbuilder-editor/dist/vscode_extension_dashbuilder_editor_${{ inputs.tag }}.vsix
+          asset_name: vscode_extension_dashbuilder_editor_${{ inputs.tag }}.vsix
+          asset_content_type: application/zip
+
   desktop:
     if: ${{ needs.extract_runners.outputs.desktop == 'true' }}
     runs-on: ${{ matrix.os }}
@@ -735,33 +832,34 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
       - name: "Support longpaths (Windows only)"
-        if: matrix.os == 'windows-latest'
+        if: runner.os == 'Windows'
         run: git config --system core.longpaths true
 
-      - name: "Checkout"
-        uses: actions/checkout@v2
+      - name: "Checkout @ GitHub default"
+        uses: actions/checkout@v3
+
+      - name: "Checkout @ Simulated squashed-merge if PR"
+        uses: ./.github/actions/checkout-pr
         with:
-          fetch-depth: 0
           ref: ${{ inputs.base_ref }}
 
-      - name: "Setup kie-tools-bot"
-        uses: ./.github/actions/setup-kie-tools-bot
-
-      - name: "Merge PR changes"
-        uses: ./.github/actions/merge-pr-changes
-
       - name: "Setup environment"
+        id: setup_env
         uses: ./.github/actions/setup-env
+
+      - name: "Bootstrap"
+        id: bootstrap
+        uses: ./.github/actions/bootstrap
         with:
-          os: ${{ matrix.os }}
+          pnpm_filter_string: -F @kie-tools/desktop...
 
       - name: "Build"
         shell: bash
         run: |
-          lerna run build:prod --scope=@kie-tools/desktop --include-dependencies --stream
+          pnpm ${{ steps.bootstrap.outputs.pnpm_filter_string }} build:prod
 
       - name: "Upload Desktop App for Linux (Ubuntu only)"
-        if: ${{ matrix.os == 'ubuntu-latest' && !inputs.dry_run }}
+        if: ${{ runner.os == 'Linux' && !inputs.dry_run }}
         uses: actions/upload-release-asset@v1.0.2
         env:
           GITHUB_TOKEN: ${{ secrets.gh_token }}
@@ -772,7 +870,7 @@ jobs:
           asset_content_type: application/tar+gzip
 
       - name: "Upload Desktop App for macOS (macOS only)"
-        if: ${{ matrix.os == 'macos-latest' && !inputs.dry_run }}
+        if: ${{ runner.os == 'macOS' && !inputs.dry_run }}
         uses: actions/upload-release-asset@v1.0.2
         env:
           GITHUB_TOKEN: ${{ secrets.gh_token }}
@@ -783,11 +881,11 @@ jobs:
           asset_content_type: application/zip
 
       - name: "Compress Desktop App (Windows only)"
-        if: matrix.os == 'windows-latest'
+        if: runner.os == 'Windows'
         run: "Compress-Archive -Path \"packages\\desktop\\out\\Business Modeler Preview-win32-x64\" -DestinationPath \"packages\\desktop\\out\\Business Modeler Preview-win32-x64.zip\""
 
       - name: "Upload Desktop App for Windows (Windows only)"
-        if: ${{ matrix.os == 'windows-latest' && !inputs.dry_run }}
+        if: ${{ runner.os == 'Windows' && !inputs.dry_run }}
         uses: actions/upload-release-asset@v1.0.2
         env:
           GITHUB_TOKEN: ${{ secrets.gh_token }}
@@ -802,26 +900,34 @@ jobs:
     runs-on: ubuntu-latest
     needs: [extract_runners]
     steps:
-      - name: "Checkout"
-        uses: actions/checkout@v2
+      - name: "Checkout @ GitHub default"
+        uses: actions/checkout@v3
+
+      - name: "Checkout @ Simulated squashed-merge if PR"
+        uses: ./.github/actions/checkout-pr
         with:
-          fetch-depth: 0
           ref: ${{ inputs.base_ref }}
 
-      - name: "Setup kie-tools-bot"
-        uses: ./.github/actions/setup-kie-tools-bot
-
-      - name: "Merge PR changes"
-        uses: ./.github/actions/merge-pr-changes
-
       - name: "Setup environment"
+        id: setup_env
         uses: ./.github/actions/setup-env
+
+      - name: "Create pnpm filter for building"
+        id: create_pnpm_filter_string_for_building
+        run: |
+          export PNPM_FILTER_STRING_FOR_BUILDING=$(pnpm -r exec 'bash' '-c' 'PKG_NAME=$(jq -r ".name" package.json) PKG_IS_PVT=$(jq -r ".private" package.json); if [ "$PKG_IS_PVT" != "true" ]; then echo "-F $PKG_NAME..."; fi')
+          echo $PNPM_FILTER_STRING_FOR_BUILDING
+          echo ::set-output name=filter::$PNPM_FILTER_STRING_FOR_BUILDING
+
+      - name: "Bootstrap"
+        id: bootstrap
+        uses: ./.github/actions/bootstrap
         with:
-          os: ubuntu-latest
+          pnpm_filter_string: ${{ steps.create_pnpm_filter_string_for_building.outputs.filter }}
 
       - name: "Build"
         run: |
-          lerna run build:prod --stream --no-private --include-dependencies
+          pnpm ${{ steps.bootstrap.outputs.pnpm_filter_string }} build:prod
 
       - name: "Publish packages to the NPM registry"
         if: ${{ !inputs.dry_run }}
@@ -829,31 +935,29 @@ jobs:
           NPM_TOKEN: ${{ secrets.kiegroup_npm_token }}
         run: |
           echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
-          lerna exec 'PKG_NAME=$(jq -r ".name" package.json); NPM_PKG_INFO=$(npm view $PKG_NAME@${{ inputs.tag }} name || echo ""); if [ -z $NPM_PKG_INFO ]; then npm publish --access public; fi' --stream --no-private
+          export PNPM_FILTER_STRING_FOR_PUBLISHING=$(pnpm -r exec 'bash' '-c' 'PKG_NAME=$(jq -r ".name" package.json) PKG_IS_PVT=$(jq -r ".private" package.json); if [ "$PKG_IS_PVT" != "true" ]; then echo "-F $PKG_NAME"; fi')
+          echo $PNPM_FILTER_STRING_FOR_PUBLISHING
+          pnpm $PNPM_FILTER_STRING_FOR_PUBLISHING exec 'bash' '-c' 'PKG_NAME=$(jq -r ".name" package.json); NPM_PKG_INFO=$(npm view $PKG_NAME@${{ inputs.tag }} name || echo ""); if [ -z $NPM_PKG_INFO ]; then pnpm publish --no-git-checks --access public; fi'
 
   standalone_editors_cdn:
-    if: ${{ always() && needs.extract_runners.outputs.standalone_editors_cdn == 'true' && (needs.chrome_extension.result == 'success' || needs.chrome_extension.result == 'skipped') }}
+    if: ${{ always() && needs.extract_runners.outputs.standalone_editors_cdn == 'true' && (needs.extended_services.result == 'success' || needs.extended_services.result == 'skipped') && (needs.dmn_dev_sandbox_image.result == 'success' || needs.dmn_dev_sandbox_image.result == 'skipped') && (needs.online_editor.result == 'success' || needs.online_editor.result == 'skipped') && (needs.chrome_extensions.result == 'success' || needs.chrome_extensions.result == 'skipped') }}
     runs-on: ubuntu-latest
-    needs: [extract_runners, chrome_extension]
+    needs: [extract_runners, dmn_dev_sandbox_image, extended_services, online_editor, chrome_extensions]
     steps:
-      - name: "Checkout kie-tools"
-        uses: actions/checkout@v2
+      - name: "Checkout @ GitHub default"
+        uses: actions/checkout@v3
+        with:
+          path: kie-tools
+
+      - name: "Checkout @ Simulated squashed-merge if PR"
+        uses: ./kie-tools/.github/actions/checkout-pr
         with:
           ref: ${{ inputs.base_ref }}
-          path: ${{ github.workspace }}/kie-tools
-          fetch-depth: 0
-
-      - name: "Setup kie-tools-bot"
-        uses: ./kie-tools/.github/actions/setup-kie-tools-bot
-
-      - name: "Merge PR changes"
-        uses: ./kie-tools/.github/actions/merge-pr-changes
-        with:
           path: kie-tools
 
       - name: "Checkout kogito-online"
         if: ${{ !inputs.dry_run }}
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           path: ${{ github.workspace }}/kogito-online
           fetch-depth: 0
@@ -862,15 +966,22 @@ jobs:
           ref: gh-pages
 
       - name: "Setup environment"
+        id: setup_env
         uses: ./kie-tools/.github/actions/setup-env
         with:
-          path: kie-tools
-          os: ubuntu-latest
+          working_dir: kie-tools
+
+      - name: "Bootstrap"
+        id: bootstrap
+        uses: ./kie-tools/.github/actions/bootstrap
+        with:
+          working_dir: kie-tools
+          pnpm_filter_string: -F @kie-tools/kie-editors-standalone...
 
       - name: "Build"
         working-directory: ${{ github.workspace }}/kie-tools
         run: |
-          lerna run build:prod --scope=@kie-tools/kie-editors-standalone --include-dependencies --stream
+          pnpm ${{ steps.bootstrap.outputs.pnpm_filter_string }} build:prod
 
       - name: "Deploy to GitHub Pages (kogito-online)"
         if: ${{ !inputs.dry_run }}
@@ -899,33 +1010,34 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
       - name: "Support longpaths (Windows only)"
-        if: matrix.os == 'windows-latest'
+        if: runner.os == 'Windows'
         run: git config --system core.longpaths true
 
-      - name: "Checkout"
-        uses: actions/checkout@v2
+      - name: "Checkout @ GitHub default"
+        uses: actions/checkout@v3
+
+      - name: "Checkout @ Simulated squashed-merge if PR"
+        uses: ./.github/actions/checkout-pr
         with:
-          fetch-depth: 0
           ref: ${{ inputs.base_ref }}
 
-      - name: "Setup kie-tools-bot"
-        uses: ./.github/actions/setup-kie-tools-bot
-
-      - name: "Merge PR changes"
-        uses: ./.github/actions/merge-pr-changes
-
       - name: "Setup environment"
+        id: setup_env
         uses: ./.github/actions/setup-env
+
+      - name: "Bootstrap"
+        id: bootstrap
+        uses: ./.github/actions/bootstrap
         with:
-          os: ${{ matrix.os }}
+          pnpm_filter_string: -F @kie-tools/extended-services...
 
       - name: "Build"
         shell: bash
         run: |
-          lerna run build:prod --scope=@kie-tools/extended-services --include-dependencies --stream
+          pnpm ${{ steps.bootstrap.outputs.pnpm_filter_string }} build:prod
 
       - name: "Upload Extended Services for Linux (Ubuntu only)"
-        if: ${{ matrix.os == 'ubuntu-latest' && !inputs.dry_run }}
+        if: ${{ runner.os == 'Linux' && !inputs.dry_run }}
         uses: actions/upload-release-asset@v1.0.2
         env:
           GITHUB_TOKEN: ${{ secrets.gh_token }}
@@ -936,7 +1048,7 @@ jobs:
           asset_content_type: application/tar+gzip
 
       - name: "Upload Extended Services for macOS (macOS only)"
-        if: ${{ matrix.os == 'macos-latest' && !inputs.dry_run }}
+        if: ${{ runner.os == 'macOS' && !inputs.dry_run }}
         uses: actions/upload-release-asset@v1.0.2
         env:
           GITHUB_TOKEN: ${{ secrets.gh_token }}
@@ -947,7 +1059,7 @@ jobs:
           asset_content_type: application/octet-stream
 
       - name: "Upload Extended Services for Windows (Windows only)"
-        if: ${{ matrix.os == 'windows-latest' && !inputs.dry_run }}
+        if: ${{ runner.os == 'Windows' && !inputs.dry_run }}
         uses: actions/upload-release-asset@v1.0.2
         env:
           GITHUB_TOKEN: ${{ secrets.gh_token }}
@@ -962,27 +1074,28 @@ jobs:
     runs-on: ubuntu-latest
     needs: [extract_runners]
     steps:
-      - name: "Checkout"
-        uses: actions/checkout@v2
+      - name: "Checkout @ GitHub default"
+        uses: actions/checkout@v3
+
+      - name: "Checkout @ Simulated squashed-merge if PR"
+        uses: ./.github/actions/checkout-pr
         with:
-          fetch-depth: 0
           ref: ${{ inputs.base_ref }}
 
-      - name: "Setup kie-tools-bot"
-        uses: ./.github/actions/setup-kie-tools-bot
-
-      - name: "Merge PR changes"
-        uses: ./.github/actions/merge-pr-changes
-
       - name: "Setup environment"
+        id: setup_env
         uses: ./.github/actions/setup-env
+
+      - name: "Bootstrap"
+        id: bootstrap
+        uses: ./.github/actions/bootstrap
         with:
-          os: ubuntu-latest
+          pnpm_filter_string: -F @kie-tools/dashbuilder...
 
       - name: "Build"
         shell: bash
         run: |
-          lerna run build:prod --scope=@kie-tools/dashbuilder --include-dependencies --stream
+          pnpm ${{ steps.bootstrap.outputs.pnpm_filter_string }} build:prod
 
       - name: "Upload DashBuilder Assets"
         if: ${{ !inputs.dry_run }}
@@ -1008,31 +1121,34 @@ jobs:
     runs-on: ubuntu-latest
     needs: [extract_runners]
     steps:
-      - name: "Checkout kie-tools"
-        uses: actions/checkout@v2
+      - name: "Checkout @ GitHub default"
+        uses: actions/checkout@v3
+        with:
+          path: kie-tools
+
+      - name: "Checkout @ Simulated squashed-merge if PR"
+        uses: ./kie-tools/.github/actions/checkout-pr
         with:
           ref: ${{ inputs.base_ref }}
-          path: ${{ github.workspace }}/kie-tools
-          fetch-depth: 0
-
-      - name: "Setup kie-tools-bot"
-        uses: ./kie-tools/.github/actions/setup-kie-tools-bot
-
-      - name: "Merge PR changes"
-        uses: ./kie-tools/.github/actions/merge-pr-changes
-        with:
           path: kie-tools
 
       - name: "Setup environment"
+        id: setup_env
         uses: ./kie-tools/.github/actions/setup-env
         with:
-          path: kie-tools
-          os: ubuntu-latest
+          working_dir: kie-tools
+
+      - name: "Bootstrap"
+        id: bootstrap
+        uses: ./kie-tools/.github/actions/bootstrap
+        with:
+          working_dir: kie-tools
+          pnpm_filter_string: -F @kie-tools/dashbuilder-images...
 
       - name: "Build Dashbuilder Images"
         working-directory: ${{ github.workspace }}/kie-tools
         run: |
-          lerna run build:prod --scope=@kie-tools/dashbuilder-images --include-dependencies --stream
+          pnpm ${{ steps.bootstrap.outputs.pnpm_filter_string }} build:prod
 
       - name: "Push dashbuilder-authoring image to quay.io"
         if: ${{ !inputs.dry_run }}
@@ -1053,3 +1169,252 @@ jobs:
           registry: "${{ env.DASHBUILDER__baseImageRegistry }}/${{ env.DASHBUILDER__baseImageAccount }}"
           username: "${{ env.DASHBUILDER__baseImageAccount }}"
           password: "${{ secrets.quay_registry_password }}"
+
+  kn_plugin_workflow:
+    if: ${{ needs.extract_runners.outputs.kn_plugin_workflow == 'true' }}
+    runs-on: ubuntu-latest
+    needs: [extract_runners]
+    steps:
+      - name: "Checkout @ GitHub default"
+        uses: actions/checkout@v3
+
+      - name: "Checkout @ Simulated squashed-merge if PR"
+        uses: ./.github/actions/checkout-pr
+        with:
+          ref: ${{ inputs.base_ref }}
+
+      - name: "Setup environment"
+        id: setup_env
+        uses: ./.github/actions/setup-env
+
+      - name: "Bootstrap"
+        id: bootstrap
+        uses: ./.github/actions/bootstrap
+        with:
+          pnpm_filter_string: -F @kie-tools/kn-plugin-workflow...
+
+      - name: "Build"
+        shell: bash
+        run: |
+          pnpm ${{ steps.bootstrap.outputs.pnpm_filter_string }} build:prod
+
+      - name: "Upload Knative CLI Workflow Plugin for Linux"
+        if: ${{ !inputs.dry_run }}
+        uses: actions/upload-release-asset@v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.gh_token }}
+        with:
+          upload_url: ${{ inputs.upload_asset_url }}
+          asset_path: ./packages/kn-plugin-workflow/dist/kn-workflow-linux-amd64
+          asset_name: kn-workflow-linux-amd64-${{ inputs.tag }}
+          asset_content_type: application/octet-stream
+
+      - name: "Upload Knative CLI Workflow Plugin for macOS"
+        if: ${{ !inputs.dry_run }}
+        uses: actions/upload-release-asset@v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.gh_token }}
+        with:
+          upload_url: ${{ inputs.upload_asset_url }}
+          asset_path: ./packages/kn-plugin-workflow/dist/kn-workflow-darwin-amd64
+          asset_name: kn-workflow-darwin-amd64-${{ inputs.tag }}
+          asset_content_type: application/octet-stream
+
+      - name: "Upload Knative CLI Workflow Plugin for macOS M1"
+        if: ${{ !inputs.dry_run }}
+        uses: actions/upload-release-asset@v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.gh_token }}
+        with:
+          upload_url: ${{ inputs.upload_asset_url }}
+          asset_path: ./packages/kn-plugin-workflow/dist/kn-workflow-darwin-arm64
+          asset_name: kn-workflow-darwin-arm64-${{ inputs.tag }}
+          asset_content_type: application/octet-stream
+
+      - name: "Upload Knative CLI Workflow Plugin for Windows"
+        if: ${{ !inputs.dry_run }}
+        uses: actions/upload-release-asset@v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.gh_token }}
+        with:
+          upload_url: ${{ inputs.upload_asset_url }}
+          asset_path: "./packages/kn-plugin-workflow/dist/kn-workflow-windows-amd64.exe"
+          asset_name: "kn-workflow-windows-amd64-${{ inputs.tag }}.exe"
+          asset_content_type: application/octet-stream
+
+  serverless_logic_sandbox_base_image:
+    env:
+      SERVERLESS_LOGIC_SANDBOX__baseImageRegistry: "quay.io"
+      SERVERLESS_LOGIC_SANDBOX__baseImageAccount: "kie-tools"
+      SERVERLESS_LOGIC_SANDBOX__baseImageName: "serverless-logic-sandbox-base-image"
+      SERVERLESS_LOGIC_SANDBOX__baseImageBuildTags: "latest ${{ inputs.tag }}"
+
+    if: ${{ needs.extract_runners.outputs.serverless_logic_sandbox_base_image == 'true' }}
+    runs-on: ubuntu-latest
+    needs: [extract_runners]
+    steps:
+      - name: "Checkout @ GitHub default"
+        uses: actions/checkout@v3
+
+      - name: "Checkout @ Simulated squashed-merge if PR"
+        uses: ./.github/actions/checkout-pr
+        with:
+          ref: ${{ inputs.base_ref }}
+
+      - name: "Cache Maven packages"
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-serverless-logic-sandbox-base-image-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-serverless-logic-sandbox-base-image-m2
+
+      - name: "Setup environment"
+        id: setup_env
+        uses: ./.github/actions/setup-env
+
+      - name: "Bootstrap"
+        id: bootstrap
+        uses: ./.github/actions/bootstrap
+        with:
+          pnpm_filter_string: -F @kie-tools/serverless-logic-sandbox-base-image...
+
+      - name: "Build"
+        shell: bash
+        run: |
+          pnpm ${{ steps.bootstrap.outputs.pnpm_filter_string }} build:prod
+      - name: "Push serverless-logic-sandbox-base-image to quay.io"
+        if: ${{ !inputs.dry_run }}
+        uses: redhat-actions/push-to-registry@v2
+        with:
+          image: "${{ env.SERVERLESS_LOGIC_SANDBOX__baseImageName }}"
+          tags: "${{ env.SERVERLESS_LOGIC_SANDBOX__baseImageBuildTags }}"
+          registry: "${{ env.SERVERLESS_LOGIC_SANDBOX__baseImageRegistry }}/${{ env.SERVERLESS_LOGIC_SANDBOX__baseImageAccount }}"
+          username: "${{ env.SERVERLESS_LOGIC_SANDBOX__baseImageAccount }}"
+          password: "${{ secrets.quay_registry_password }}"
+
+  openjdk11_mvn_image:
+    env:
+      SERVERLESS_LOGIC_SANDBOX__openJdk11MvnImageRegistry: "quay.io"
+      SERVERLESS_LOGIC_SANDBOX__openJdk11MvnImageAccount: "kie-tools"
+      SERVERLESS_LOGIC_SANDBOX__openJdk11MvnImageName: "openjdk11-mvn-image"
+      SERVERLESS_LOGIC_SANDBOX__openJdk11MvnImageBuildTags: "latest ${{ inputs.tag }}"
+
+    if: ${{ needs.extract_runners.outputs.openjdk11_mvn_image == 'true' }}
+    runs-on: ubuntu-latest
+    needs: [extract_runners]
+    steps:
+      - name: "Checkout @ GitHub default"
+        uses: actions/checkout@v3
+
+      - name: "Checkout @ Simulated squashed-merge if PR"
+        uses: ./.github/actions/checkout-pr
+        with:
+          ref: ${{ inputs.base_ref }}
+
+      - name: "Setup environment"
+        id: setup_env
+        uses: ./.github/actions/setup-env
+
+      - name: "Bootstrap"
+        id: bootstrap
+        uses: ./.github/actions/bootstrap
+        with:
+          pnpm_filter_string: -F @kie-tools/openjdk11-mvn-image...
+
+      - name: "Build"
+        shell: bash
+        run: |
+          pnpm ${{ steps.bootstrap.outputs.pnpm_filter_string }} build:prod
+
+      - name: "Push openjdk11-mvn-image to quay.io"
+        if: ${{ !inputs.dry_run }}
+        uses: redhat-actions/push-to-registry@v2
+        with:
+          image: "${{ env.SERVERLESS_LOGIC_SANDBOX__openJdk11MvnImageName }}"
+          tags: "${{ env.SERVERLESS_LOGIC_SANDBOX__openJdk11MvnImageBuildTags }}"
+          registry: "${{ env.SERVERLESS_LOGIC_SANDBOX__openJdk11MvnImageRegistry }}/${{ env.SERVERLESS_LOGIC_SANDBOX__openJdk11MvnImageAccount }}"
+          username: "${{ env.SERVERLESS_LOGIC_SANDBOX__openJdk11MvnImageAccount }}"
+          password: "${{ secrets.quay_registry_password }}"
+
+  serverless_logic_sandbox:
+    env:
+      SERVERLESS_LOGIC_SANDBOX__buildInfo: ""
+      SERVERLESS_LOGIC_SANDBOX__kieSandboxExtendedServicesDownloadUrlLinux: "https://github.com/kiegroup/kie-tools/releases/download/${{ inputs.tag }}/kie_sandbox_extended_services_linux_${{ inputs.tag }}.tar.gz"
+      SERVERLESS_LOGIC_SANDBOX__kieSandboxExtendedServicesDownloadUrlMacOs: "https://github.com/kiegroup/kie-tools/releases/download/${{ inputs.tag }}/kie_sandbox_extended_services_macos_${{ inputs.tag }}.dmg"
+      SERVERLESS_LOGIC_SANDBOX__kieSandboxExtendedServicesDownloadUrlWindows: "https://github.com/kiegroup/kie-tools/releases/download/${{ inputs.tag }}/kie_sandbox_extended_services_windows_${{ inputs.tag }}.exe"
+      SERVERLESS_LOGIC_SANDBOX__kieSandboxExtendedServicesCompatibleVersion: "${{ inputs.tag }}"
+      SERVERLESS_LOGIC_SANDBOX__gtmId: "GTM-5W2QP3C"
+      SERVERLESS_LOGIC_SANDBOX__baseImageRegistry: "quay.io"
+      SERVERLESS_LOGIC_SANDBOX__baseImageAccount: "kie-tools"
+      SERVERLESS_LOGIC_SANDBOX__baseImageName: "serverless-logic-sandbox-base-image"
+      SERVERLESS_LOGIC_SANDBOX__baseImageTag: "${{ inputs.tag }}"
+      SERVERLESS_LOGIC_SANDBOX__openJdk11MvnImageRegistry: "quay.io"
+      SERVERLESS_LOGIC_SANDBOX__openJdk11MvnImageAccount: "kie-tools"
+      SERVERLESS_LOGIC_SANDBOX__openJdk11MvnImageName: "openjdk11-mvn-image"
+      SERVERLESS_LOGIC_SANDBOX__openJdk11MvnImageTag: "${{ inputs.tag }}"
+      SERVERLESS_LOGIC_SANDBOX__corsProxyUrl: "https://cors-proxy-kie-sandbox.rhba-0ad6762cc85bcef5745bb684498c2436-0000.us-south.containers.appdomain.cloud"
+
+    if: ${{ always() && needs.extract_runners.outputs.serverless_logic_sandbox == 'true' && (needs.extended_services.result == 'success' || needs.extended_services.result == 'skipped') && (needs.serverless_logic_sandbox_base_image.result == 'success' || needs.serverless_logic_sandbox_base_image.result == 'skipped') && (needs.openjdk11_mvn_image.result == 'success' || needs.openjdk11_mvn_image.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    needs: [extract_runners, serverless_logic_sandbox_base_image, openjdk11_mvn_image, extended_services]
+    steps:
+      - name: "Checkout @ GitHub default"
+        uses: actions/checkout@v3
+        with:
+          path: kie-tools
+
+      - name: "Checkout @ Simulated squashed-merge if PR"
+        uses: ./kie-tools/.github/actions/checkout-pr
+        with:
+          ref: ${{ inputs.base_ref }}
+          path: kie-tools
+
+      - name: "Checkout serverless-logic-sandbox-deployment"
+        if: ${{ !inputs.dry_run }}
+        uses: actions/checkout@v3
+        with:
+          path: ${{ github.workspace }}/serverless-logic-sandbox-deployment
+          fetch-depth: 0
+          token: ${{ secrets.kie_tools_bot_token }}
+          repository: kiegroup/serverless-logic-sandbox-deployment
+          ref: gh-pages
+
+      - name: "Cache Maven packages"
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-serverless-logic-sandbox-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-serverless-logic-sandbox-m2
+
+      - name: "Setup environment"
+        id: setup_env
+        uses: ./kie-tools/.github/actions/setup-env
+        with:
+          working_dir: kie-tools
+
+      - name: "Bootstrap"
+        id: bootstrap
+        uses: ./kie-tools/.github/actions/bootstrap
+        with:
+          working_dir: kie-tools
+          pnpm_filter_string: -F @kie-tools/serverless-logic-sandbox...
+
+      - name: "Build"
+        working-directory: ${{ github.workspace }}/kie-tools
+        run: |
+          pnpm ${{ steps.bootstrap.outputs.pnpm_filter_string }} build:prod
+
+      - name: "Deploy to GitHub Pages (serverless-logic-sandbox-deployment)"
+        if: ${{ !inputs.dry_run }}
+        working-directory: ${{ github.workspace }}/serverless-logic-sandbox-deployment
+        shell: bash
+        run: |
+          echo "Reset deployment dir"
+          shopt -s extglob
+          rm -rf -- !("dev"|"staging"|".nojekyll"|"CNAME")
+          echo "Copy resources"
+          cp -r ${{ github.workspace }}/kie-tools/packages/serverless-logic-sandbox/dist/* .
+          echo "Commit changes and push"
+          git add .
+          git commit -m "Deploy ${{ inputs.tag }}"
+          git push origin gh-pages

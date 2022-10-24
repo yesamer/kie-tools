@@ -15,14 +15,16 @@
  */
 
 const path = require("path");
-const buildEnv = require("@kie-tools/build-env");
+const webpackBaseEnv = require("./env");
 
 module.exports = (env) => {
-  const transpileOnly = buildEnv.global.webpack(env).transpileOnly;
-  const minimize = buildEnv.global.webpack(env).minimize;
-  const sourceMaps = buildEnv.global.webpack(env).sourceMaps;
-  const mode = buildEnv.global.webpack(env).mode;
-  const live = buildEnv.global.webpack(env).live;
+  const webpackEnv = env.dev ? webpackBaseEnv.env.webpack.dev : webpackBaseEnv.env.webpack.prod;
+
+  const transpileOnly = webpackEnv.transpileOnly;
+  const minimize = webpackEnv.minimize;
+  const sourceMaps = webpackEnv.sourceMaps;
+  const mode = webpackEnv.mode;
+  const live = env.live;
 
   console.info(`Webpack :: ts-loader :: transpileOnly: ${transpileOnly}`);
   console.info(`Webpack :: minimize: ${minimize}`);
@@ -35,7 +37,7 @@ module.exports = (env) => {
         {
           test: /\.js$/,
           enforce: "pre",
-          use: ["source-map-loader"],
+          use: [require.resolve("source-map-loader")],
         },
       ]
     : [];
@@ -49,7 +51,7 @@ module.exports = (env) => {
   const multiPackageLiveReloadLoader = live
     ? [
         {
-          loader: path.resolve(path.join(__dirname, "./multi-package-live-reload-loader.js")),
+          loader: require.resolve("./multi-package-live-reload-loader.js"),
         },
       ]
     : [];
@@ -75,7 +77,7 @@ module.exports = (env) => {
           test: /\.tsx?$/,
           use: [
             {
-              loader: "ts-loader",
+              loader: require.resolve("ts-loader"),
               options: {
                 transpileOnly,
                 compilerOptions: {
@@ -117,6 +119,7 @@ module.exports = (env) => {
         fs: false,
         child_process: false,
         net: false,
+        buffer: require.resolve("buffer/"),
       },
       extensions: [".tsx", ".ts", ".js", ".jsx"],
       modules: ["node_modules"],

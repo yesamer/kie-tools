@@ -20,7 +20,7 @@ import {
   DecisionTableProps,
   HitPolicy,
   LogicType,
-} from "@kie-tools/boxed-expression-component";
+} from "@kie-tools/boxed-expression-component/dist/api";
 import { fireEvent, render } from "@testing-library/react";
 import {
   flushPromises,
@@ -166,6 +166,7 @@ describe("DecisionTableExpression tests", () => {
       broadcastDecisionTableExpressionDefinition: (definition: DecisionTableProps) =>
         mockedBroadcastDefinition(definition),
       notifyUserAction: () => {},
+      selectObject(): void {},
     } as BoxedExpressionEditorGWTService;
 
     const { container, baseElement } = render(

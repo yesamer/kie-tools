@@ -21,7 +21,7 @@
   <parent>
     <groupId>org.dashbuilder</groupId>
     <artifactId>dashbuilder-backend</artifactId>
-    <version>0.0.0</version>
+    <version>${revision}</version>
   </parent>
 
   <artifactId>dashbuilder-external-backend</artifactId>
@@ -44,11 +44,6 @@
     <dependency>
       <groupId>org.dashbuilder</groupId>
       <artifactId>dashbuilder-services-api</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.dashbuilder</groupId>
-      <artifactId>dashbuilder-js</artifactId>
     </dependency>
 
     <dependency>

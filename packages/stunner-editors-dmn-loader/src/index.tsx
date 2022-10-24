@@ -15,9 +15,7 @@
  */
 
 import {
-  BoxedExpressionEditor,
   BoxedExpressionEditorGWTService,
-  BoxedExpressionEditorProps,
   ContextProps,
   DataTypeProps,
   DecisionTableProps,
@@ -29,11 +27,21 @@ import {
   LogicType,
   PMMLParams,
   RelationProps,
-} from "@kie-tools/boxed-expression-component";
-import { ImportJavaClasses, ImportJavaClassGWTService, JavaClass } from "@kie-tools/import-java-classes-component";
+} from "@kie-tools/boxed-expression-component/dist/api";
+import {
+  BoxedExpressionEditor,
+  BoxedExpressionEditorProps,
+} from "@kie-tools/boxed-expression-component/dist/components";
+import {
+  ImportJavaClasses,
+  GWTLayerService,
+  JavaClass,
+  JavaCodeCompletionService,
+} from "@kie-tools/import-java-classes-component";
 import * as React from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import * as ReactDOM from "react-dom";
+import { useElementsThatStopKeyboardEventsPropagation } from "@kie-tools-core/keyboard-shortcuts/dist/channel";
 
 export interface BoxedExpressionEditorWrapperProps {
   /** Identifier of the decision node, where the expression will be hold */
@@ -82,6 +90,9 @@ const BoxedExpressionWrapper: React.FunctionComponent<BoxedExpressionEditorWrapp
     onLogicTypeSelect(selectedLogicType: string): void {
       window.beeApiWrapper?.onLogicTypeSelect(selectedLogicType);
     },
+    selectObject(uuid: string): void {
+      window.beeApiWrapper?.selectObject(uuid);
+    },
     resetExpressionDefinition: (definition: ExpressionProps) => {
       setExpressionDefinition(definition);
       window.beeApiWrapper?.resetExpressionDefinition?.(definition);
@@ -116,6 +127,11 @@ const BoxedExpressionWrapper: React.FunctionComponent<BoxedExpressionEditorWrapp
     },
   };
 
+  useElementsThatStopKeyboardEventsPropagation(
+    window,
+    useMemo(() => [".boxed-expression-provider"], [])
+  );
+
   return (
     <BoxedExpressionEditor
       boxedExpressionEditorGWTService={boxedExpressionEditorGWTService}
@@ -148,96 +164,28 @@ const renderBoxedExpressionEditor = (
   );
 };
 
-export interface ImportJavaClassesWrapperProps {
-  /** Button disabled status */
-  buttonDisabledStatus: boolean;
-  /** Button tooltip message */
-  buttonTooltipMessage?: string;
-}
-
-const ImportJavaClassesWrapper = ({ buttonDisabledStatus, buttonTooltipMessage }: ImportJavaClassesWrapperProps) => {
+const ImportJavaClassesWrapper = () => {
   window.ImportJavaClassesAPI = {
     importJavaClasses: (javaClasses: JavaClass[]) => {
       window.ImportJavaClassesAPIWrapper?.importJavaClasses?.(javaClasses);
     },
   };
-  /** BEGIN - TEMPORARY MOCK CODE TO TEST COMPONENT INSIDE THE EDITOR - TO BE REMOVED */
-  window.envelopeMock = {
-    lspGetClassServiceMocked: (value: string) => lspGetClassServiceMocked(value),
-    lspGetClassFieldsServiceMocked: (className: string) => lspGetClassFieldsServiceMocked(className),
+
+  const gwtLayerService: GWTLayerService = {
+    importJavaClassesInDataTypeEditor: (javaClasses) => window.ImportJavaClassesAPI?.importJavaClasses?.(javaClasses),
   };
 
-  const lspGetClassServiceMocked = (value: string) => {
-    /* Mocked data retrieved from LSP Service */
-    const booClassesList = ["org.kie.test.kogito.Book", "org.kie.test.kogito.Boom"];
-    const bookClassesList = ["org.kie.test.kogito.Book"];
-    const boomClassesList = ["org.kie.test.kogito.Boom"];
-
-    /* Temporary mocks managing */
-    if (value === "Boo") {
-      return booClassesList;
-    } else if (value === "Book") {
-      return bookClassesList;
-    } else if (value === "Boom") {
-      return boomClassesList;
-    } else {
-      return [];
-    }
-  };
-  const lspGetClassFieldsServiceMocked = async (className: string) => {
-    /* Mocked data retrieved from LSP Service */
-    const bookClassFieldsList = new Map<string, string>();
-    bookClassFieldsList.set("author", "org.kie.test.kogito.Author");
-    bookClassFieldsList.set("title", "java.lang.String");
-    bookClassFieldsList.set("year", "java.lang.Integer");
-    bookClassFieldsList.set("boom", "org.kie.test.kogito.Boom");
-    const boomClassFieldsList = new Map<string, string>();
-    boomClassFieldsList.set("startTime", "java.util.Date");
-    boomClassFieldsList.set("big", "java.lang.Boolean");
-    boomClassFieldsList.set("color", "java.lang.String");
-    boomClassFieldsList.set("countdown", "java.time.Duration");
-    const authorClassFieldsList = new Map<string, string>();
-    authorClassFieldsList.set("age", "int");
-    authorClassFieldsList.set("name", "java.lang.String");
-
-    await delay();
-
-    /* Temporary mocks managing */
-    if (className === "org.kie.test.kogito.Book") {
-      return bookClassFieldsList;
-    } else if (className === "org.kie.test.kogito.Boom") {
-      return boomClassFieldsList;
-    } else if (className === "org.kie.test.kogito.Author") {
-      return authorClassFieldsList;
-    } else {
-      return new Map<string, string>();
-    }
+  const javaCodeCompletionService: JavaCodeCompletionService = {
+    getClasses: (query: string) => window.envelope.javaCodeCompletionService.getClasses(query),
+    getFields: (fullClassName: string) => window.envelope.javaCodeCompletionService.getAccessors(fullClassName, ""),
+    isLanguageServerAvailable: () => window.envelope.javaCodeCompletionService.isLanguageServerAvailable(),
   };
 
-  const delay = () => new Promise((res) => setTimeout(res, Math.random() * (4000 - 750) + 1000));
-  /** END TEMPORARY MOCK CODE TO TEST COMPONENT INSIDE THE EDITOR - TO BE REMOVED */
-
-  const importJavaClassesGWTService: ImportJavaClassGWTService = {
-    handleOnWizardImportButtonClick: (javaClasses) => window.ImportJavaClassesAPI?.importJavaClasses?.(javaClasses),
-  };
-
-  return (
-    <ImportJavaClasses
-      buttonDisabledStatus={buttonDisabledStatus}
-      buttonTooltipMessage={buttonTooltipMessage}
-      importJavaClassesGWTService={importJavaClassesGWTService}
-    />
-  );
+  return <ImportJavaClasses gwtLayerService={gwtLayerService} javaCodeCompletionService={javaCodeCompletionService} />;
 };
 
-const renderImportJavaClasses = (selector: string, buttonDisabledStatus: boolean, buttonTooltipMessage: string) => {
-  ReactDOM.render(
-    <ImportJavaClassesWrapper
-      buttonDisabledStatus={buttonDisabledStatus}
-      buttonTooltipMessage={buttonTooltipMessage}
-    />,
-    document.querySelector(selector)
-  );
+const renderImportJavaClasses = (selector: string) => {
+  ReactDOM.render(<ImportJavaClassesWrapper />, document.querySelector(selector));
 };
 
 export { renderBoxedExpressionEditor, renderImportJavaClasses };

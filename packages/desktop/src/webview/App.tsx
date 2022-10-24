@@ -18,9 +18,6 @@ import { Alert, AlertActionCloseButton, AlertVariant } from "@patternfly/react-c
 import * as electron from "electron";
 import * as React from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import "@patternfly/patternfly/base/patternfly-variables.css";
-import "@patternfly/patternfly/patternfly-addons.scss";
-import "@patternfly/patternfly/patternfly.scss";
 import "../../static/resources/style.css";
 import { ElectronFile, UNSAVED_FILE_NAME } from "../common/ElectronFile";
 import { GlobalContext } from "./common/GlobalContext";
@@ -31,6 +28,7 @@ import IpcRendererEvent = Electron.IpcRendererEvent;
 import { I18nDictionariesProvider } from "@kie-tools-core/i18n/dist/react-components";
 import { DesktopI18nContext, desktopI18nDefaults, desktopI18nDictionaries } from "./common/i18n";
 import { EmbeddedEditorFile } from "@kie-tools-core/editor/dist/channel";
+import { removeDirectories, removeFileExtension } from "../common/utils";
 
 enum Pages {
   HOME,
@@ -56,10 +54,11 @@ export function App() {
   const onFilenameChange = useCallback(
     (filePath: string) => {
       setFile({
-        fileName: filePath,
+        fileName: removeFileExtension(removeDirectories(filePath)!),
         fileExtension: file.fileExtension,
         getFileContents: file.getFileContents,
         isReadOnly: false,
+        path: filePath,
       });
     },
     [file]
@@ -68,8 +67,18 @@ export function App() {
   const editorEnvelopeLocator: EditorEnvelopeLocator = useMemo(
     () =>
       new EditorEnvelopeLocator(window.location.origin, [
-        new EnvelopeMapping("bpmn", "**/*.bpmn?(2)", "../gwt-editors/bpmn", "envelope/bpmn-envelope.html"),
-        new EnvelopeMapping("dmn", "**/*.dmn", "../gwt-editors/dmn", "envelope/dmn-envelope.html"),
+        new EnvelopeMapping({
+          type: "bpmn",
+          filePathGlob: "**/*.bpmn?(2)",
+          resourcesPathPrefix: "../gwt-editors/bpmn",
+          envelopePath: "envelope/bpmn-envelope.html",
+        }),
+        new EnvelopeMapping({
+          type: "dmn",
+          filePathGlob: "**/*.dmn",
+          resourcesPathPrefix: "../gwt-editors/dmn",
+          envelopePath: "envelope/dmn-envelope.html",
+        }),
       ]),
     []
   );
@@ -85,10 +94,11 @@ export function App() {
       closeInvalidFileTypeErrorAlert();
       setPage(Pages.EDITOR);
       setFile({
-        fileName: fileToOpen.filePath,
+        fileName: removeFileExtension(removeDirectories(fileToOpen.filePath)!),
         fileExtension: fileToOpen.fileType,
         getFileContents: () => Promise.resolve(fileToOpen.fileContent),
         isReadOnly: false,
+        path: fileToOpen.filePath,
       });
     },
     [closeInvalidFileTypeErrorAlert]

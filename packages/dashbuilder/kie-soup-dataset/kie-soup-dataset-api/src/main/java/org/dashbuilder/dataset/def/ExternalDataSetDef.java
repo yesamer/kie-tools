@@ -15,6 +15,7 @@
  */
 package org.dashbuilder.dataset.def;
 
+import java.util.Map;
 import java.util.Objects;
 
 import javax.validation.constraints.NotNull;
@@ -30,6 +31,12 @@ public class ExternalDataSetDef extends DataSetDef {
     private String url;
 
     private boolean dynamic;
+
+    private String expression;
+
+    private String content;
+
+    private Map<String, String> headers;
 
     public ExternalDataSetDef() {
         super.setProvider(DataSetProviderType.EXTERNAL);
@@ -51,20 +58,61 @@ public class ExternalDataSetDef extends DataSetDef {
         this.dynamic = dynamic;
     }
 
+    public String getExpression() {
+        return expression;
+    }
+
+    public void setExpression(String expression) {
+        this.expression = expression;
+    }
+
+    public String getContent() {
+        return content;
+    }
+
+    public void setContent(String content) {
+        this.content = content;
+    }
+
     @Override
     public int hashCode() {
         return Objects.hash(super.hashCode(),
                 url,
                 dynamic);
     }
-    
+
+    public Map<String, String> getHeaders() {
+        return headers;
+    }
+
+    public void setHeaders(Map<String, String> headers) {
+        this.headers = headers;
+    }
+
     @Override
     public DataSetDef clone() {
         var def = new ExternalDataSetDef();
         clone(def);
         def.setUrl(getUrl());
         def.setDynamic(isDynamic());
+        def.setHeaders(getHeaders());
         return def;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (!super.equals(obj))
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        var other = (ExternalDataSetDef) obj;
+        return Objects.equals(content, other.content) &&
+               dynamic == other.dynamic &&
+               Objects.equals(expression, other.expression) &&
+               Objects.equals(headers, other.headers) &&
+               Objects.equals(url, other.url);
     }
 
     public String toString() {
@@ -76,9 +124,10 @@ public class ExternalDataSetDef extends DataSetDef {
         out.append("Push max size=").append(pushMaxSize).append(" Kb\n");
         out.append("URL=").append(url).append("\n");
         out.append("Dynamic=").append(dynamic).append("\n");
+        out.append("Expression=").append(expression).append("\n");
+        out.append("Content=").append(content).append("\n");
+        out.append("Headers=").append(headers);
         return out.toString();
     }
-    
-    
 
 }

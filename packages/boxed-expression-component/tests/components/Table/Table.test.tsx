@@ -21,13 +21,14 @@ import { act } from "react-dom/test-utils";
 import { ColumnInstance, DataRecord } from "react-table";
 import { PASTE_OPERATION } from "@kie-tools/boxed-expression-component/dist/components/Table/common";
 import {
+  BoxedExpressionEditorGWTService,
   ColumnsUpdateArgs,
   DataType,
   RowsUpdateArgs,
   TableHandlerConfiguration,
   TableOperation,
-} from "@kie-tools/boxed-expression-component";
-import { Table } from "@kie-tools/boxed-expression-component";
+} from "@kie-tools/boxed-expression-component/dist/api";
+
 import {
   activateNameAndDataTypePopover,
   EDIT_EXPRESSION_DATA_TYPE,
@@ -39,6 +40,7 @@ import {
   wrapComponentInContext,
 } from "../test-utils";
 import { DEFAULT_MIN_WIDTH } from "@kie-tools/boxed-expression-component/dist/components/Resizer";
+import { Table } from "@kie-tools/boxed-expression-component/dist/components";
 
 jest.useFakeTimers();
 
@@ -269,6 +271,26 @@ describe("Table tests", () => {
         columnIndex: 0,
       });
     });
+
+    test("should trigger boxedExpressionEditorGWTService.selectObject, when clicking on header cell", async () => {
+      const { boxedExpressionEditorGWTService, mockedSelectObject } = mockBoxedExpressionEditorGWTService();
+
+      const { container } = render(
+        usingTestingBoxedExpressionI18nContext(
+          usingTestingBoxedExpressionProviderContext(
+            <Table
+              columns={[{ label: columnName, accessor: columnName, dataType: DataType.Undefined } as ColumnInstance]}
+              rows={[]}
+            />,
+            { boxedExpressionEditorGWTService }
+          ).wrapper
+        ).wrapper
+      );
+
+      fireEvent.click(container.querySelectorAll(EXPRESSION_COLUMN_HEADER_CELL_INFO)[0] as HTMLTableHeaderCellElement);
+
+      expect(mockedSelectObject).toHaveBeenLastCalledWith(columnName);
+    });
   });
 
   describe("when interacting with body", () => {
@@ -311,6 +333,27 @@ describe("Table tests", () => {
         rows: [expect.objectContaining(newRow)],
         columns,
       });
+    });
+
+    test("should trigger boxedExpressionEditorGWTService.selectObject, when clicking on body cell", async () => {
+      const { boxedExpressionEditorGWTService, mockedSelectObject } = mockBoxedExpressionEditorGWTService();
+      const id = "row-id";
+
+      const { container } = render(
+        usingTestingBoxedExpressionI18nContext(
+          usingTestingBoxedExpressionProviderContext(
+            <Table
+              columns={[{ label: columnName, accessor: columnName, dataType: DataType.Undefined } as ColumnInstance]}
+              rows={[{ id, columnName: "" }]}
+            />,
+            { boxedExpressionEditorGWTService }
+          ).wrapper
+        ).wrapper
+      );
+
+      fireEvent.click(container.querySelector("table tbody tr td") as HTMLTableCellElement);
+
+      expect(mockedSelectObject).toHaveBeenLastCalledWith(id);
     });
   });
 
@@ -630,6 +673,64 @@ describe("Table tests", () => {
       });
     });
   });
+
+  describe("when interacting with column name", () => {
+    test("should trigger boxedExpressionEditorGWTService.notifyUserAction, when column name changed", async () => {
+      const { boxedExpressionEditorGWTService, mockedNotifyUserAction } = mockBoxedExpressionEditorGWTService();
+
+      const nameColumn = {
+        label: columnName,
+        accessor: columnName,
+        dataType: DataType.Undefined,
+        width: DEFAULT_MIN_WIDTH,
+        inlineEditable: true,
+      } as ColumnInstance;
+
+      const { container } = render(
+        usingTestingBoxedExpressionI18nContext(
+          usingTestingBoxedExpressionProviderContext(<Table columns={[nameColumn]} rows={[]} />, {
+            boxedExpressionEditorGWTService,
+          }).wrapper
+        ).wrapper
+      );
+
+      const element = container.querySelectorAll("p.pf-u-text-truncate")[0] as HTMLElement;
+      element.click();
+
+      const input = changeValue(container, "new value");
+      input.blur();
+
+      expect(mockedNotifyUserAction).toHaveBeenCalled();
+    });
+
+    test("should not trigger boxedExpressionEditorGWTService.notifyUserAction, when column name is not changed", async () => {
+      const { boxedExpressionEditorGWTService, mockedNotifyUserAction } = mockBoxedExpressionEditorGWTService();
+
+      const nameColumn = {
+        label: columnName,
+        accessor: columnName,
+        dataType: DataType.Undefined,
+        width: DEFAULT_MIN_WIDTH,
+        inlineEditable: true,
+      } as ColumnInstance;
+
+      const { container } = render(
+        usingTestingBoxedExpressionI18nContext(
+          usingTestingBoxedExpressionProviderContext(<Table columns={[nameColumn]} rows={[]} />, {
+            boxedExpressionEditorGWTService,
+          }).wrapper
+        ).wrapper
+      );
+
+      const element = container.querySelectorAll("p.pf-u-text-truncate")[0] as HTMLElement;
+      element.click();
+
+      const input = changeValue(container, columnName);
+      input.blur();
+
+      expect(mockedNotifyUserAction).toHaveBeenCalledTimes(0);
+    });
+  });
 });
 
 async function selectMenuEntryIfNotDisabled(baseElement: Element, menuEntry: string) {
@@ -670,4 +771,23 @@ function customEvent(container: HTMLElement) {
       type: PASTE_OPERATION,
     },
   });
+}
+
+function changeValue(container: Element, newValue: string) {
+  const inputElement = container.querySelector("input")!;
+  fireEvent.change(inputElement, {
+    target: { value: newValue },
+  });
+  return inputElement;
+}
+
+function mockBoxedExpressionEditorGWTService() {
+  const mockedSelectObject: (uuid?: string | undefined) => void = jest.fn();
+  const mockedNotifyUserAction: () => void = jest.fn();
+  const boxedExpressionEditorGWTService = {
+    broadcastFunctionExpressionDefinition: () => {},
+    notifyUserAction: mockedNotifyUserAction,
+    selectObject: mockedSelectObject,
+  } as unknown as BoxedExpressionEditorGWTService;
+  return { mockedSelectObject, mockedNotifyUserAction, boxedExpressionEditorGWTService };
 }

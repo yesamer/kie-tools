@@ -1,3 +1,77 @@
+# 0.24.0 (alpha)
+
+- [KOGITO-7365](https://issues.redhat.com/browse/KOGITO-7365) - [SWF Editor] Defining an API to get the node name of text line selected
+- [KOGITO-7568](https://issues.redhat.com/browse/KOGITO-7568) - Use the YAML API in SWF Text editor and VSCode ext
+- [KOGITO-7912](https://issues.redhat.com/browse/KOGITO-7912) - [SWF Editor] Add YAML autocompletion to Serverless Logic Web Tools
+- [KOGITO-7366](https://issues.redhat.com/browse/KOGITO-7366) - [SWF Editor] Channel to GWT bridge to highlight a node
+- [KOGITO-8063](https://issues.redhat.com/browse/KOGITO-8063) - [SWF Editor] Disable cross-language autocompletion in YAML
+- [KOGITO-7199](https://issues.redhat.com/browse/KOGITO-7199) - SWF Viewer - Usability improvements for mediators (Mouse Pointers)
+
+# 0.23.0 (alpha)
+
+- [KOGITO-7663](https://issues.redhat.com/browse/KOGITO-7663) - Fix inconsistency in filename template description and default value
+- [KOGITO-6427](https://issues.redhat.com/browse/KOGITO-6427) - User is able to input malformed custom data types
+- [KOGITO-7372](https://issues.redhat.com/browse/KOGITO-7372) - Source/Target of data assignments shows malformed data when specific generics are used
+- [KOGITO-7893](https://issues.redhat.com/browse/KOGITO-7893) - Stunner should now be the default workflow viewer
+- [KOGITO-7531](https://issues.redhat.com/browse/KOGITO-7531) - [SWF Editor] End construct support
+- [KOGITO-7591](https://issues.redhat.com/browse/KOGITO-7591) - [SWF Editor] Is adding extra "end": false to eventConditions fields even when transition is set
+- [KOGITO-7608](https://issues.redhat.com/browse/KOGITO-7608) - [SWF Editor] Is removing "schedule" from "start" object and makes is a string
+- [KOGITO-7609](https://issues.redhat.com/browse/KOGITO-7609) - [SWF Editor] Is changing transition object to string
+- [KOGITO-7599](https://issues.redhat.com/browse/KOGITO-7599) - [SWF Editor] Cannot open workflows from specification examples
+- [KOGITO-7594](https://issues.redhat.com/browse/KOGITO-7594) - [SWF Editor] Is unable to load SendCloudEventOnProvisionExample.sw.json
+- [KOGITO-7797](https://issues.redhat.com/browse/KOGITO-7797) - [DMN Designer] Improving \"Import Java Classes\" button's tooltip message
+
+# 0.22.0 (alpha)
+
+- _(No new features)_
+
+# 0.21.0 (alpha)
+
+- [KOGITO-7375](https://issues.redhat.com/browse/KOGITO-7375) - [DMN Designer] Import Java Classes Fix cases with special characters in PATH
+
+# 0.20.0 (alpha)
+
+- [KOGITO-7109](https://issues.redhat.com/browse/KOGITO-7109) - [DMN Designer] New Boxed Expression editor - Copy & paste values with newline
+- [KOGITO-4172](https://issues.redhat.com/browse/KOGITO-4172) - [DMN Designer] New Boxed Expression editor - User must be able to create new lines by using shortcuts
+
+# 0.19.0 (alpha)
+
+- [KOGITO-6210](https://issues.redhat.com/browse/KOGITO-6210) - BPMN editor loses data assignment
+- [KOGITO-6399](https://issues.redhat.com/browse/KOGITO-6399) - DMN Expression Editor - undo decision table annotation column
+- [KOGITO-6417](https://issues.redhat.com/browse/KOGITO-6417) - [DMN Designer] Undo/redo in Boxed Expression Editor for editable cells is not working properly
+- [KOGITO-6911](https://issues.redhat.com/browse/KOGITO-6911) - Adding a new DMN Runner input row using the Form '+' button is broken
+- [KOGITO-6932](https://issues.redhat.com/browse/KOGITO-6932) - DMN editor: text annotation is not saved correctly when creating it by copy and paste
+- [KOGITO-7067](https://issues.redhat.com/browse/KOGITO-7067) - [DMN Designer] DMN Editor: Slowness while opening large DMN file
+- [KOGITO-6859](https://issues.redhat.com/browse/KOGITO-6859) - [DMN Editor] Enabling Import Java Classes feature
+- [KOGITO-6608](https://issues.redhat.com/browse/KOGITO-6608) - Implement header cells keyboard navigation and editing on the Boxed Expression component
+- [KOGITO-6915](https://issues.redhat.com/browse/KOGITO-6915) - Add visual regression tests to Cypress
+- [KOGITO-6918](https://issues.redhat.com/browse/KOGITO-6918) - [DMN Designer] interaction with Name and Data Type popover with keyboard
+- [KOGITO-7040](https://issues.redhat.com/browse/KOGITO-7040) - [DMN Designer] Finalizing Import Java Classes
+- [KOGITO-7103](https://issues.redhat.com/browse/KOGITO-7103) - Wrong save behavior on desktop channel
+- [KOGITO-7096](https://issues.redhat.com/browse/KOGITO-7096) - DMN Runner - form empty state is not working
+
+# 0.18.0 (alpha)
+
+- [KOGITO-5735](https://issues.redhat.com/browse/KOGITO-5735) - Stunner - Provide an initial JS / TS API to interact with nodes and connectors
+- [KOGITO-6899](https://issues.redhat.com/browse/KOGITO-6899) - [SWF Editor] Integrate Service Catalog with Service Registries on Red Hat Hybrid Cloud Console
+- [KOGITO-6562](https://issues.redhat.com/browse/KOGITO-6562) - [SWF Editor] Make Service Catalog available through autocomplete
+- [KOGITO-6830](https://issues.redhat.com/browse/KOGITO-6830) - Remove `kie-soup-bom`dependency from the `stunner-editors` package
+- [KOGITO-6832](https://issues.redhat.com/browse/KOGITO-6832) - Stunner - Update Tooltip message for Priority property in Task
+- [KOGITO-6841](https://issues.redhat.com/browse/KOGITO-6841) - Remove `kie-parent` from the `stunner-editors` package
+
+# 0.17.0 (alpha)
+
+- [KOGITO-4936](https://issues.redhat.com/browse/KOGITO-4936) - [DMN Designer] React/GWT - Import Java classes as data objects on Kogito - UI component
+- [KOGITO-6276](https://issues.redhat.com/browse/KOGITO-6276) - [DMN Designer] Integrate Import Java Classes component to JavaCodeCompletion service
+- [KOGITO-4686](https://issues.redhat.com/browse/KOGITO-4686) - Cannot open DMN/BPMN files from command line with VS Code
+- [KOGITO-6693](https://issues.redhat.com/browse/KOGITO-6693) - Java code completion configuration
+- [KOGITO-6704](https://issues.redhat.com/browse/KOGITO-6704) - [DMN Designer] Data Type Constraint overflow on Documentation page
+- [KOGITO-6421](https://issues.redhat.com/browse/KOGITO-6421) - [DMN Designer] new editor toggle sanity checks are disabled for decision tables
+- [KOGITO-6496](https://issues.redhat.com/browse/KOGITO-6496) - Remove unused/unnecessary dependencies with KIE V7 from `stunner-editors`
+- [KOGITO-6671](https://issues.redhat.com/browse/KOGITO-6771) - [DMN Designer] Question, Allowed Answers on Documentation page
+- [KOGITO-6703](https://issues.redhat.com/browse/KOGITO-6703) - [DMN Designer] Text Annotation on Documentation page
+- [KOGITO-6181](https://issues.redhat.com/browse/KOGITO-6181) - Stunner-based editors are losing focus when asked for the SVG
+
 # 0.16.0 (alpha)
 
 - [KOGITO-6144](https://issues.redhat.com/browse/KOGITO-6144) - DMN Editor missing xml-prolog for UTF-8 encoding

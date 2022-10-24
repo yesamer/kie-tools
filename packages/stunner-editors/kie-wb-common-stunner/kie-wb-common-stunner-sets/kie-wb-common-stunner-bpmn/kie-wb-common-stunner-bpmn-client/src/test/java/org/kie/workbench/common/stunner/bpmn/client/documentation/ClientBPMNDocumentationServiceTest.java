@@ -40,7 +40,7 @@ import org.kie.workbench.common.stunner.bpmn.definition.property.assignee.Actors
 import org.kie.workbench.common.stunner.bpmn.definition.property.assignee.Groupid;
 import org.kie.workbench.common.stunner.bpmn.definition.property.background.BackgroundSet;
 import org.kie.workbench.common.stunner.bpmn.definition.property.cm.CaseManagementSet;
-import org.kie.workbench.common.stunner.bpmn.definition.property.connectors.Priority;
+import org.kie.workbench.common.stunner.bpmn.definition.property.collaboration.diagram.CollaborationSet;
 import org.kie.workbench.common.stunner.bpmn.definition.property.dataio.AssignmentsInfo;
 import org.kie.workbench.common.stunner.bpmn.definition.property.diagram.AdHoc;
 import org.kie.workbench.common.stunner.bpmn.definition.property.diagram.DiagramSet;
@@ -86,6 +86,7 @@ import org.kie.workbench.common.stunner.bpmn.definition.property.task.ScriptType
 import org.kie.workbench.common.stunner.bpmn.definition.property.task.Skippable;
 import org.kie.workbench.common.stunner.bpmn.definition.property.task.Subject;
 import org.kie.workbench.common.stunner.bpmn.definition.property.task.TaskName;
+import org.kie.workbench.common.stunner.bpmn.definition.property.task.TaskPriority;
 import org.kie.workbench.common.stunner.bpmn.definition.property.task.TaskType;
 import org.kie.workbench.common.stunner.bpmn.definition.property.task.TaskTypes;
 import org.kie.workbench.common.stunner.bpmn.definition.property.task.UserTaskExecutionSet;
@@ -357,7 +358,8 @@ public class ClientBPMNDocumentationServiceTest {
                 new BackgroundSet(),
                 new FontSet(),
                 new RectangleDimensionsSet(),
-                advancedData
+                advancedData,
+                new CollaborationSet()
         );
 
         userTask = new UserTask(new TaskGeneralSet(new Name(TASK_NAME),
@@ -370,7 +372,7 @@ public class ClientBPMNDocumentationServiceTest {
                                                          new ReassignmentsInfo(),
                                                          new IsAsync(true),
                                                          new Skippable(),
-                                                         new Priority(TASK_PRIORITY),
+                                                         new TaskPriority(TASK_PRIORITY),
                                                          new Subject(TASK_SUBJECT),
                                                          new Description(TASK_DESCRIPTION),
                                                          new CreatedBy(),

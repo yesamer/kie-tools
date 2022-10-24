@@ -17,17 +17,19 @@
 import { VsCodeBackendProxy } from "@kie-tools-core/backend/dist/vscode";
 import { EditorEnvelopeLocator } from "@kie-tools-core/editor/dist/api";
 import { I18n } from "@kie-tools-core/i18n/dist/core";
-import { VsCodeWorkspaceApi } from "@kie-tools-core/workspace/dist/vscode";
+import { VsCodeWorkspaceChannelApiImpl } from "@kie-tools-core/workspace/dist/vscode";
 import * as vscode from "vscode";
 import { EnvelopeBusMessageBroadcaster } from "./EnvelopeBusMessageBroadcaster";
 import { generateSvg } from "./generateSvg";
 import { vsCodeI18nDefaults, vsCodeI18nDictionaries } from "./i18n";
-import { KogitoEditorFactory } from "./KogitoEditorFactory";
-import { KogitoEditorStore } from "./KogitoEditorStore";
-import { KogitoEditorWebviewProvider } from "./KogitoEditorWebviewProvider";
-import { VsCodeNotificationsApi } from "@kie-tools-core/notifications/dist/vscode";
-import { VsCodeJavaCodeCompletionImpl } from "@kie-tools-core/vscode-java-code-completion/dist/vscode";
-import { KogitoEditorChannelApiProducer } from "./KogitoEditorChannelApiProducer";
+import { VsCodeKieEditorControllerFactory } from "./VsCodeKieEditorControllerFactory";
+import { VsCodeKieEditorStore } from "./VsCodeKieEditorStore";
+import { VsCodeKieEditorsTextEditorProvider } from "./VsCodeKieEditorsTextEditorProvider";
+import { VsCodeNotificationsChannelApiImpl } from "@kie-tools-core/notifications/dist/vscode";
+import { VsCodeJavaCodeCompletionApiImpl } from "@kie-tools-core/vscode-java-code-completion/dist/vscode";
+import { VsCodeKieEditorChannelApiProducer } from "./VsCodeKieEditorChannelApiProducer";
+import { VsCodeKieEditorsCustomEditorProvider } from "./VsCodeKieEditorsCustomEditorProvider";
+import { executeOnSaveHook } from "./onSaveHook";
 
 /**
  * Starts a Kogito extension.
@@ -43,21 +45,23 @@ export async function startExtension(args: {
   extensionName: string;
   context: vscode.ExtensionContext;
   viewType: string;
-  generateSvgCommandId: string;
-  silentlyGenerateSvgCommandId: string;
+  generateSvgCommandId?: string;
+  silentlyGenerateSvgCommandId?: string;
   editorEnvelopeLocator: EditorEnvelopeLocator;
   backendProxy: VsCodeBackendProxy;
-  channelApiProducer?: KogitoEditorChannelApiProducer;
+  channelApiProducer?: VsCodeKieEditorChannelApiProducer;
+  editorDocumentType?: "text" | "custom";
 }) {
   await args.backendProxy.tryLoadBackendExtension(true);
 
-  const vsCodeI18n = new I18n(vsCodeI18nDefaults, vsCodeI18nDictionaries, vscode.env.language);
-  const workspaceApi = new VsCodeWorkspaceApi();
-  const editorStore = new KogitoEditorStore();
+  const i18n = new I18n(vsCodeI18nDefaults, vsCodeI18nDictionaries, vscode.env.language);
+  const workspaceApi = new VsCodeWorkspaceChannelApiImpl();
+  const editorStore = new VsCodeKieEditorStore();
   const messageBroadcaster = new EnvelopeBusMessageBroadcaster();
-  const vsCodeNotificationsApi = new VsCodeNotificationsApi(workspaceApi);
-  const vsCodeJavaCodeCompletionChannelApi = new VsCodeJavaCodeCompletionImpl();
-  const editorFactory = new KogitoEditorFactory(
+  const vsCodeNotificationsApi = new VsCodeNotificationsChannelApiImpl(workspaceApi);
+  const vsCodeJavaCodeCompletionChannelApi = new VsCodeJavaCodeCompletionApiImpl();
+
+  const editorFactory = new VsCodeKieEditorControllerFactory(
     args.context,
     editorStore,
     args.editorEnvelopeLocator,
@@ -67,47 +71,80 @@ export async function startExtension(args: {
     vsCodeNotificationsApi,
     vsCodeJavaCodeCompletionChannelApi,
     args.viewType,
-    vsCodeI18n,
+    i18n,
     args.channelApiProducer
   );
 
-  const editorWebviewProvider = new KogitoEditorWebviewProvider(
-    args.context,
-    args.viewType,
-    editorStore,
-    editorFactory,
-    vsCodeI18n,
-    vsCodeNotificationsApi,
-    args.editorEnvelopeLocator
-  );
+  if (args.editorDocumentType === undefined || args.editorDocumentType === "custom") {
+    args.context.subscriptions.push(
+      vscode.window.registerCustomEditorProvider(
+        args.viewType,
+        new VsCodeKieEditorsCustomEditorProvider(
+          args.context,
+          args.viewType,
+          editorStore,
+          editorFactory,
+          i18n,
+          vsCodeNotificationsApi,
+          args.editorEnvelopeLocator
+        ),
+        {
+          webviewOptions: { retainContextWhenHidden: true },
+        }
+      )
+    );
+  } else if (args.editorDocumentType === "text") {
+    args.context.subscriptions.push(
+      vscode.window.registerCustomEditorProvider(
+        args.viewType,
+        new VsCodeKieEditorsTextEditorProvider(args.context, args.viewType, editorFactory),
+        {
+          webviewOptions: { retainContextWhenHidden: true },
+        }
+      )
+    );
 
-  args.context.subscriptions.push(
-    vscode.window.registerCustomEditorProvider(args.viewType, editorWebviewProvider, {
-      webviewOptions: { retainContextWhenHidden: true },
-    })
-  );
-
-  args.context.subscriptions.push(
-    vscode.commands.registerCommand(args.generateSvgCommandId, () =>
-      generateSvg({
-        editorStore: editorStore,
-        workspaceApi: workspaceApi,
-        vsCodeI18n: vsCodeI18n,
-        displayNotification: true,
-        editorEnvelopeLocator: args.editorEnvelopeLocator,
+    args.context.subscriptions.push(
+      vscode.workspace.onDidSaveTextDocument((document: vscode.TextDocument) => {
+        const envelopeMapping = args.editorEnvelopeLocator.getEnvelopeMapping(document.uri.fsPath);
+        if (envelopeMapping) {
+          executeOnSaveHook(envelopeMapping.type);
+        }
       })
-    )
-  );
+    );
+  } else {
+    throw new Error("Type not supported");
+  }
 
-  args.context.subscriptions.push(
-    vscode.commands.registerCommand(args.silentlyGenerateSvgCommandId, () =>
-      generateSvg({
-        editorStore: editorStore,
-        workspaceApi: workspaceApi,
-        vsCodeI18n: vsCodeI18n,
-        displayNotification: false,
-        editorEnvelopeLocator: args.editorEnvelopeLocator,
-      })
-    )
-  );
+  if (args.generateSvgCommandId !== undefined) {
+    args.context.subscriptions.push(
+      vscode.commands.registerCommand(args.generateSvgCommandId, () =>
+        generateSvg({
+          editorStore: editorStore,
+          workspaceApi: workspaceApi,
+          vsCodeI18n: i18n,
+          displayNotification: true,
+          editorEnvelopeLocator: args.editorEnvelopeLocator,
+        })
+      )
+    );
+  }
+
+  if (args.silentlyGenerateSvgCommandId !== undefined) {
+    args.context.subscriptions.push(
+      vscode.commands.registerCommand(args.silentlyGenerateSvgCommandId, () =>
+        generateSvg({
+          editorStore: editorStore,
+          workspaceApi: workspaceApi,
+          vsCodeI18n: i18n,
+          displayNotification: false,
+          editorEnvelopeLocator: args.editorEnvelopeLocator,
+        })
+      )
+    );
+  }
+
+  return editorStore;
 }
+
+export * from "./VsCodeKieEditorStore";

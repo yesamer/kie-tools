@@ -16,34 +16,48 @@
 
 import * as React from "react";
 import { fireEvent, render, waitFor } from "@testing-library/react";
-import { ImportJavaClasses, ImportJavaClassGWTService } from "../../components";
-import * as _ from "lodash";
+import { ImportJavaClasses, GWTLayerService, JavaCodeCompletionService } from "../../components";
+import {
+  JavaCodeCompletionAccessor,
+  JavaCodeCompletionClass,
+} from "@kie-tools-core/vscode-java-code-completion/dist/api";
 
 describe("ImportJavaClasses component tests", () => {
-  test("should render ImportJavaClasses Button component", () => {
-    const { container } = render(
-      <ImportJavaClasses buttonDisabledStatus={false} importJavaClassesGWTService={importJavaClassesGWTServiceMock} />
+  test("should render ImportJavaClasses Button component", async () => {
+    const { baseElement } = render(
+      <ImportJavaClasses
+        gwtLayerService={gwtLayerServiceMock}
+        javaCodeCompletionService={getJavaCodeCompletionServiceMock([])}
+      />
     );
 
-    expect(container).toMatchSnapshot();
+    await testImportJavaClassesButtonEnabled(baseElement);
+
+    expect(baseElement).toMatchSnapshot();
   });
 
-  test("Should show Modal after clicking on the button", () => {
+  test("Should show Modal after clicking on the button", async () => {
     const { baseElement, getByText } = render(
-      <ImportJavaClasses buttonDisabledStatus={false} importJavaClassesGWTService={importJavaClassesGWTServiceMock} />
+      <ImportJavaClasses
+        gwtLayerService={gwtLayerServiceMock}
+        javaCodeCompletionService={getJavaCodeCompletionServiceMock([])}
+      />
     );
+    await testImportJavaClassesButtonEnabled(baseElement);
     const modalWizardButton = getByText("Import Java classes")! as HTMLButtonElement;
     modalWizardButton.click();
 
     expect(baseElement).toMatchSnapshot();
   });
 
-  test("Should search box works", () => {
-    const mockedLSPGetClassService = jest.fn();
-    lspGetClassServiceMock(mockedLSPGetClassService);
+  test("Should search box works", async () => {
     const { baseElement, getByText } = render(
-      <ImportJavaClasses buttonDisabledStatus={false} importJavaClassesGWTService={importJavaClassesGWTServiceMock} />
+      <ImportJavaClasses
+        gwtLayerService={gwtLayerServiceMock}
+        javaCodeCompletionService={getJavaCodeCompletionServiceMock([])}
+      />
     );
+    await testImportJavaClassesButtonEnabled(baseElement);
     testSearchInput(baseElement, getByText);
     const resetButton = baseElement.querySelector('[aria-label="Reset"]')! as HTMLButtonElement;
     expect(resetButton).toBeInTheDocument();
@@ -51,14 +65,16 @@ describe("ImportJavaClasses component tests", () => {
     expect(baseElement.querySelector('[aria-label="Reset"]')! as HTMLButtonElement).not.toBeInTheDocument();
   });
 
-  test("Should search box with results works", () => {
-    const mockedLSPGetClassService = jest.fn((value) => ["com.Book", "com.Author"]);
-    lspGetClassServiceMock(mockedLSPGetClassService);
+  test("Should search box with results works", async () => {
     const { baseElement, getByText } = render(
-      <ImportJavaClasses buttonDisabledStatus={false} importJavaClassesGWTService={importJavaClassesGWTServiceMock} />
+      <ImportJavaClasses
+        gwtLayerService={gwtLayerServiceMock}
+        javaCodeCompletionService={getJavaCodeCompletionServiceMock([{ fqcn: "com.Book" }, { fqcn: "com.Author" }])}
+      />
     );
+    await testImportJavaClassesButtonEnabled(baseElement);
     testSearchInput(baseElement, getByText);
-    testJavaClassSelection(baseElement, false);
+    await testJavaClassSelection(baseElement, false);
     let checkSecondElement = baseElement.querySelector('[aria-labelledby="com.Author"]')! as HTMLInputElement;
     fireEvent.click(checkSecondElement);
     checkSecondElement = baseElement.querySelector('[aria-labelledby="com.Author"]')! as HTMLInputElement;
@@ -67,10 +83,14 @@ describe("ImportJavaClasses component tests", () => {
     expect(baseElement).toMatchSnapshot();
   });
 
-  test("Should close Modal after opening it and clicking on the Cancel button", () => {
+  test("Should close Modal after opening it and clicking on the Cancel button", async () => {
     const { baseElement, getByText } = render(
-      <ImportJavaClasses buttonDisabledStatus={false} importJavaClassesGWTService={importJavaClassesGWTServiceMock} />
+      <ImportJavaClasses
+        gwtLayerService={gwtLayerServiceMock}
+        javaCodeCompletionService={getJavaCodeCompletionServiceMock([])}
+      />
     );
+    await testImportJavaClassesButtonEnabled(baseElement);
     const modalWizardButton = getByText("Import Java classes")! as HTMLButtonElement;
     modalWizardButton.click();
     const cancelButton = getByText("Cancel") as HTMLButtonElement;
@@ -80,26 +100,38 @@ describe("ImportJavaClasses component tests", () => {
   });
 
   test("Should move to second step", async () => {
-    lspGetClassServiceMock(jest.fn((value) => ["com.Book", "com.Author", "com.Test"]));
-    lspGetClassFieldServiceMock();
     const { baseElement, getByText } = render(
-      <ImportJavaClasses buttonDisabledStatus={false} importJavaClassesGWTService={importJavaClassesGWTServiceMock} />
+      <ImportJavaClasses
+        gwtLayerService={gwtLayerServiceMock}
+        javaCodeCompletionService={getJavaCodeCompletionServiceMock([
+          { fqcn: "com.Book" },
+          { fqcn: "com.Author" },
+          { fqcn: "com.Test" },
+        ])}
+      />
     );
+    await testImportJavaClassesButtonEnabled(baseElement);
     testSearchInput(baseElement, getByText);
-    testJavaClassSelection(baseElement, true);
+    await testJavaClassSelection(baseElement, true);
     await testNextStepFieldsTable(baseElement, getByText);
 
     expect(baseElement).toMatchSnapshot();
   });
 
   test("Should move to second step and fetch a Java Class", async () => {
-    lspGetClassServiceMock(jest.fn((value) => ["com.Book", "com.Author", "com.Test"]));
-    lspGetClassFieldServiceMock();
     const { baseElement, getByText } = render(
-      <ImportJavaClasses buttonDisabledStatus={false} importJavaClassesGWTService={importJavaClassesGWTServiceMock} />
+      <ImportJavaClasses
+        gwtLayerService={gwtLayerServiceMock}
+        javaCodeCompletionService={getJavaCodeCompletionServiceMock([
+          { fqcn: "com.Book" },
+          { fqcn: "com.Author" },
+          { fqcn: "com.Test" },
+        ])}
+      />
     );
+    await testImportJavaClassesButtonEnabled(baseElement);
     testSearchInput(baseElement, getByText);
-    testJavaClassSelection(baseElement, true);
+    await testJavaClassSelection(baseElement, true);
     await testNextStepFieldsTable(baseElement, getByText);
 
     const fetchButton = getByText('Fetch "Test" class')! as HTMLButtonElement;
@@ -113,13 +145,19 @@ describe("ImportJavaClasses component tests", () => {
   });
 
   test("Should move to second step and fetch, remove a Java Class", async () => {
-    lspGetClassServiceMock(jest.fn((value) => ["com.Book", "com.Author", "com.Test"]));
-    lspGetClassFieldServiceMock();
     const { baseElement, getByText } = render(
-      <ImportJavaClasses buttonDisabledStatus={false} importJavaClassesGWTService={importJavaClassesGWTServiceMock} />
+      <ImportJavaClasses
+        gwtLayerService={gwtLayerServiceMock}
+        javaCodeCompletionService={getJavaCodeCompletionServiceMock([
+          { fqcn: "com.Book" },
+          { fqcn: "com.Author" },
+          { fqcn: "com.Test" },
+        ])}
+      />
     );
+    await testImportJavaClassesButtonEnabled(baseElement);
     testSearchInput(baseElement, getByText);
-    testJavaClassSelection(baseElement, true);
+    await testJavaClassSelection(baseElement, true);
     await testNextStepFieldsTable(baseElement, getByText);
     await testFetchClicked(getByText);
 
@@ -139,13 +177,19 @@ describe("ImportJavaClasses component tests", () => {
   });
 
   test("Should move to third step", async () => {
-    lspGetClassServiceMock(jest.fn((value) => ["com.Book", "com.Author", "com.Test"]));
-    lspGetClassFieldServiceMock();
     const { baseElement, getByText } = render(
-      <ImportJavaClasses buttonDisabledStatus={false} importJavaClassesGWTService={importJavaClassesGWTServiceMock} />
+      <ImportJavaClasses
+        gwtLayerService={gwtLayerServiceMock}
+        javaCodeCompletionService={getJavaCodeCompletionServiceMock([
+          { fqcn: "com.Book" },
+          { fqcn: "com.Author" },
+          { fqcn: "com.Test" },
+        ])}
+      />
     );
+    await testImportJavaClassesButtonEnabled(baseElement);
     testSearchInput(baseElement, getByText);
-    testJavaClassSelection(baseElement, true);
+    await testJavaClassSelection(baseElement, true);
     /* Second Step */
     await testNextStepFieldsTable(baseElement, getByText);
     /* Third Step */
@@ -165,7 +209,10 @@ describe("ImportJavaClasses component tests", () => {
     expect(baseElement.querySelector('[aria-label="Reset"]')! as HTMLButtonElement).toBeInTheDocument();
   }
 
-  function testJavaClassSelection(baseElement: Element, hasThirdElement: boolean) {
+  async function testJavaClassSelection(baseElement: Element, hasThirdElement: boolean) {
+    await waitFor(() => {
+      expect(baseElement.querySelector('[aria-label="class-data-list"]')!).toBeInTheDocument();
+    });
     const firstElement = baseElement.querySelector('[id="com.Book"]')! as HTMLSpanElement;
     expect(firstElement).toBeInTheDocument();
     const secondElement = baseElement.querySelector('[id="com.Author"]')! as HTMLSpanElement;
@@ -223,36 +270,43 @@ describe("ImportJavaClasses component tests", () => {
     });
   }
 
-  function lspGetClassServiceMock(mockedBroadcastDefinition: jest.Mock) {
-    window.envelopeMock = _.extend(window.envelopeMock || {}, {
-      lspGetClassServiceMocked: (value: string) => mockedBroadcastDefinition(value),
+  async function testImportJavaClassesButtonEnabled(baseElement: Element) {
+    await waitFor(() => {
+      expect(baseElement.querySelector('[aria-disabled="false"][type="button"]')).toBeInTheDocument();
     });
   }
 
-  function lspGetClassFieldServiceMock() {
-    window.envelopeMock.lspGetClassFieldsServiceMocked = jest.fn(lspGetClassFieldsServiceMocked);
-  }
-
-  const lspGetClassFieldsServiceMocked = async (className: string) => {
-    const bookClassFieldsMap = new Map<string, string>();
-    bookClassFieldsMap.set("title", "java.lang.String");
-    bookClassFieldsMap.set("year", "java.lang.Integer");
-    bookClassFieldsMap.set("test", "com.Test");
-    const authorClassFieldsMap = new Map<string, string>();
-    authorClassFieldsMap.set("name", "java.lang.String");
-    authorClassFieldsMap.set("isAlive", "java.lang.Boolean");
-    if (className === "com.Book") {
-      return bookClassFieldsMap;
-    } else if (className === "com.Author") {
-      return authorClassFieldsMap;
-    } else {
-      return new Map<string, string>();
-    }
-  };
-
-  const importJavaClassesGWTServiceMock: ImportJavaClassGWTService = {
-    handleOnWizardImportButtonClick: jest.fn((javaClasses) => {
+  const gwtLayerServiceMock: GWTLayerService = {
+    importJavaClassesInDataTypeEditor: jest.fn((javaClasses) => {
       /* Do Nothing */
     }),
   };
+
+  function getJavaCodeCompletionServiceMock(classMocks: JavaCodeCompletionClass[]) {
+    const javaCodeCompletionServiceMock: JavaCodeCompletionService = {
+      getClasses: (value) => Promise.resolve(classMocks),
+      getFields: getFieldsMocks,
+      isLanguageServerAvailable: () => Promise.resolve(true),
+    };
+    return javaCodeCompletionServiceMock;
+  }
+
+  async function getFieldsMocks(className: string) {
+    const bookClassFields = [
+      { fqcn: "com.Book", accessor: "title", type: "java.lang.String" },
+      { fqcn: "com.Book", accessor: "year", type: "java.lang.Integer" },
+      { fqcn: "com.Book", accessor: "test", type: "com.Test" },
+    ];
+    const authorClassFields = [
+      { fqcn: "com.Author", accessor: "name", type: "java.lang.String" },
+      { fqcn: "com.Author", accessor: "isAlive", type: "java.lang.Boolean" },
+    ];
+    if (className === "com.Book") {
+      return bookClassFields;
+    } else if (className === "com.Author") {
+      return authorClassFields;
+    } else {
+      return [];
+    }
+  }
 });

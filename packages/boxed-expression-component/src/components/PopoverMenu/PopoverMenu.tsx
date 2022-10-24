@@ -15,8 +15,11 @@
  */
 
 import * as React from "react";
+import { useCallback, useState, useImperativeHandle } from "react";
 import { Popover } from "@patternfly/react-core";
 import "./PopoverMenu.css";
+import { useBoxedExpression } from "../../context";
+import { NavigationKeysUtils } from "../common";
 
 export interface PopoverMenuProps {
   /** Optional children element to be considered for triggering the popover */
@@ -35,37 +38,119 @@ export interface PopoverMenuProps {
   hasAutoWidth?: boolean;
   /** Popover min width */
   minWidth?: string;
+  /**
+   * True to show the popover programmatically.
+   */
+  isVisible?: boolean | null;
+  /**
+   * Lifecycle function invoked when the popover has fully transitioned out, called when the user click outside the popover.
+   */
+  onHide?: () => void;
+  /**
+   * Lifecycle function invoked when the popover has fully transitioned out, called when the user press "Esc" key.
+   */
+  onCancel?: (event?: MouseEvent | KeyboardEvent) => void;
+  /**
+   * Lifecycle function invoked when the popover has fully transitioned in.
+   */
+  onShown?: () => void;
 }
 
-export const PopoverMenu: React.FunctionComponent<PopoverMenuProps> = ({
-  children,
-  arrowPlacement,
-  body,
-  title,
-  appendTo,
-  className,
-  hasAutoWidth,
-  minWidth,
-}: PopoverMenuProps) => {
-  return (
-    <Popover
-      data-ouia-component-id="expression-popover-menu"
-      className={`popover-menu-selector${className ? " " + className : ""}`}
-      hasAutoWidth={hasAutoWidth}
-      minWidth={minWidth}
-      position="bottom"
-      distance={0}
-      id="menu-selector"
-      reference={arrowPlacement}
-      appendTo={appendTo}
-      headerContent={
-        <div className="selector-menu-title" data-ouia-component-id="expression-popover-menu-title">
-          {title}
-        </div>
-      }
-      bodyContent={body}
-    >
-      {children}
-    </Popover>
-  );
-};
+export interface PopoverMenuRef {
+  /**
+   * set the visibility of the popover
+   */
+  setIsVisible: (isVisible: boolean) => void;
+}
+
+export const PopoverMenu = React.forwardRef(
+  (
+    {
+      children,
+      arrowPlacement,
+      body,
+      title,
+      appendTo,
+      className,
+      hasAutoWidth,
+      minWidth,
+      isVisible = null,
+      onHide = () => {},
+      onCancel = () => {},
+      onShown = () => {},
+    }: PopoverMenuProps,
+    ref
+  ) => {
+    const triggerManually = isVisible !== null;
+    const { setIsContextMenuOpen } = useBoxedExpression();
+    const [isPopoverVisible, setIsPopoverVisible] = useState(false);
+
+    const onHidden = useCallback(() => {
+      setIsContextMenuOpen(false);
+    }, [setIsContextMenuOpen]);
+
+    const onPopoverShown = useCallback(() => {
+      setIsContextMenuOpen(true);
+      onShown();
+      setIsPopoverVisible(true);
+    }, [setIsContextMenuOpen, onShown]);
+
+    const shouldOpen = useCallback((showFunction?: () => void) => {
+      showFunction?.();
+    }, []);
+
+    const shouldClose = useCallback(
+      (_tip, hideFunction?: () => void, event?: MouseEvent | KeyboardEvent) => {
+        // if the esc key has been pressed with a Select component open
+        if ((event?.target as Element).closest(".pf-c-select__menu")) {
+          return;
+        }
+
+        if (event instanceof KeyboardEvent && NavigationKeysUtils.isEscape(event?.key)) {
+          onCancel(event);
+        } else {
+          onHide();
+        }
+
+        hideFunction?.();
+      },
+      [onCancel, onHide]
+    );
+
+    useImperativeHandle(
+      ref,
+      (): PopoverMenuRef => ({
+        setIsVisible: (isVisible: boolean) => {
+          setIsPopoverVisible(isVisible);
+        },
+      })
+    );
+
+    return (
+      <Popover
+        data-ouia-component-id="expression-popover-menu"
+        className={`popover-menu-selector${className ? " " + className : ""}`}
+        hasAutoWidth={hasAutoWidth}
+        minWidth={minWidth}
+        position="bottom"
+        distance={0}
+        id="menu-selector"
+        reference={arrowPlacement}
+        appendTo={appendTo}
+        onHidden={onHidden}
+        onShown={onPopoverShown}
+        headerContent={
+          <div className="selector-menu-title" data-ouia-component-id="expression-popover-menu-title">
+            {title}
+          </div>
+        }
+        bodyContent={body}
+        isVisible={isPopoverVisible}
+        shouldClose={shouldClose}
+        shouldOpen={shouldOpen}
+      >
+        {children}
+      </Popover>
+    );
+  }
+);

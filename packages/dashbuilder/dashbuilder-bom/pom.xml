@@ -22,7 +22,7 @@
   <parent>
     <groupId>org.dashbuilder</groupId>
     <artifactId>dashbuilder-parent</artifactId>
-    <version>0.0.0</version>
+    <version>${revision}</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
@@ -742,19 +742,6 @@
       <dependency>
         <groupId>org.dashbuilder</groupId>
         <artifactId>dashbuilder-validations</artifactId>
-        <version>${project.version}</version>
-        <classifier>sources</classifier>
-      </dependency>
-
-      <dependency>
-        <groupId>org.dashbuilder</groupId>
-        <artifactId>dashbuilder-js</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.dashbuilder</groupId>
-        <artifactId>dashbuilder-js</artifactId>
         <version>${project.version}</version>
         <classifier>sources</classifier>
       </dependency>

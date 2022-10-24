@@ -27,13 +27,32 @@ public class RuntimeModelClientParserFactory {
     @Inject
     Instance<RuntimeModelClientParser> parsers;
 
-    public Optional<RuntimeModelClientParser> get(String fileName) {
+    @Inject
+    YAMLRuntimeModelClientParser yamlParser;
+
+    @Inject
+    JSONRuntimeModelClientParser jsonParser;
+
+    public Optional<RuntimeModelClientParser> get(String content) {
         for (var p : parsers) {
-            if (fileName.toLowerCase().endsWith(p.supportedType().toLowerCase())) {
+            if (p.test(content)) {
                 return Optional.of(p);
             }
         }
         return Optional.empty();
+    }
+
+    /**
+     * 
+     * Editors only supports a specific range of parsers.
+     * @param content
+     * @return
+     */
+    public RuntimeModelClientParser getEditorParser(String content) {
+        if (jsonParser.test(content)) {
+            return jsonParser;
+        }
+        return yamlParser;
     }
 
 }

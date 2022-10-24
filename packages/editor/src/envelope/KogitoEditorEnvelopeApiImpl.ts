@@ -100,8 +100,11 @@ export class KogitoEditorEnvelopeApiImpl<
     this.args.envelopeContext.channelApi.notifications.kogitoEditor_ready.send();
   };
 
-  public kogitoEditor_contentChanged = (editorContent: EditorContent) => {
-    this.view().setLoading();
+  public kogitoEditor_contentChanged = (editorContent: EditorContent, args: { showLoadingOverlay: boolean }) => {
+    if (args.showLoadingOverlay) {
+      this.view().setLoading();
+    }
+
     return this.editor
       .setContent(editorContent.path ?? "", editorContent.content)
       .catch((e) => {
@@ -152,7 +155,11 @@ export class KogitoEditorEnvelopeApiImpl<
   }
 
   private registerDefaultShortcuts(initArgs: EditorInitArgs) {
-    if (initArgs.channel === ChannelType.VSCODE || initArgs.isReadOnly) {
+    if (
+      initArgs.channel === ChannelType.VSCODE_DESKTOP ||
+      initArgs.channel === ChannelType.VSCODE_WEB ||
+      initArgs.isReadOnly
+    ) {
       return;
     }
 

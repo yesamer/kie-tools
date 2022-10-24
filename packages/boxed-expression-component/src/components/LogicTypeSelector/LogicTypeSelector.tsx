@@ -63,6 +63,8 @@ export interface LogicTypeSelectorProps {
   onUpdatingRecursiveExpression?: (expression: ExpressionProps) => void;
 }
 
+export const LOGIC_TYPE_SELECTOR_CLASS = "logic-type-selector";
+
 export const LogicTypeSelector: React.FunctionComponent<LogicTypeSelectorProps> = ({
   selectedExpression,
   onLogicTypeUpdating,
@@ -98,6 +100,8 @@ export const LogicTypeSelector: React.FunctionComponent<LogicTypeSelectorProps> 
     setContextMenuVisibility,
     targetElement,
   } = useContextMenuHandler(boxedExpression.editorRef?.current ?? document);
+
+  const { setIsContextMenuOpen } = useBoxedExpression();
 
   const renderExpression = useMemo(() => {
     switch (expression.logicType) {
@@ -153,11 +157,12 @@ export const LogicTypeSelector: React.FunctionComponent<LogicTypeSelectorProps> 
       boxedExpression.boxedExpressionEditorGWTService?.notifyUserAction();
       const selectedLogicType = itemId as LogicType;
       onLogicTypeUpdating(selectedLogicType);
+      setIsContextMenuOpen(false);
       if (!isHeadless) {
         boxedExpression.boxedExpressionEditorGWTService?.onLogicTypeSelect(selectedLogicType);
       }
     },
-    [boxedExpression.boxedExpressionEditorGWTService, onLogicTypeUpdating]
+    [boxedExpression.boxedExpressionEditorGWTService, isHeadless, onLogicTypeUpdating, setIsContextMenuOpen]
   );
 
   const buildLogicSelectorMenu = useMemo(
@@ -219,7 +224,7 @@ export const LogicTypeSelector: React.FunctionComponent<LogicTypeSelectorProps> 
     if (!isHeadless) {
       classes.push(`${boxedExpression.decisionNodeId}`);
     }
-    classes.push("logic-type-selector");
+    classes.push(LOGIC_TYPE_SELECTOR_CLASS);
     if (isLogicTypeSelected) {
       classes.push("logic-type-selected");
     } else {
@@ -228,8 +233,17 @@ export const LogicTypeSelector: React.FunctionComponent<LogicTypeSelectorProps> 
     return classes.join(" ");
   }, [boxedExpression.decisionNodeId, isHeadless, isLogicTypeSelected]);
 
+  const onRootSelectorClick = useCallback(
+    (event) => {
+      if (!isHeadless && event.target === contextMenuRef.current) {
+        boxedExpression.boxedExpressionEditorGWTService?.selectObject(boxedExpression.decisionNodeId);
+      }
+    },
+    [boxedExpression.boxedExpressionEditorGWTService, boxedExpression.decisionNodeId, contextMenuRef, isHeadless]
+  );
+
   return (
-    <div className={cssClasses} ref={contextMenuRef}>
+    <div className={cssClasses} ref={contextMenuRef} onClick={onRootSelectorClick}>
       {isLogicTypeSelected ? renderExpression : i18n.selectExpression}
       {!isLogicTypeSelected && buildLogicSelectorMenu}
       {shouldClearContextMenuBeOpened && buildContextMenu}

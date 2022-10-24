@@ -59,11 +59,13 @@ export const createEditor = (
     getElementPosition: (selector) => envelopeApi.requests.kogitoGuidedTour_guidedTourElementPositionRequest(selector),
     getContent: () => envelopeApi.requests.kogitoEditor_contentRequest().then((c) => c.content),
     getPreview: () => envelopeApi.requests.kogitoEditor_previewRequest(),
-    setContent: (path, content) => envelopeApi.requests.kogitoEditor_contentChanged({ path: path, content: content }),
+    setContent: (path, content) =>
+      envelopeApi.requests.kogitoEditor_contentChanged({ path, content }, { showLoadingOverlay: true }),
     subscribeToContentChanges: (callback) => stateControl.subscribe(callback),
     unsubscribeToContentChanges: (callback) => stateControl.unsubscribe(callback),
     markAsSaved: () => stateControl.setSavedCommand(),
     validate: () => envelopeApi.requests.kogitoEditor_validate(),
+    setTheme: (theme) => Promise.resolve(),
     envelopeApi,
   };
 };

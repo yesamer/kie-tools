@@ -20,10 +20,13 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import io.github.bonigarcia.wdm.WebDriverManager;
 import org.apache.commons.io.IOUtils;
@@ -32,13 +35,14 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
-import org.kie.soup.commons.util.Maps;
 import org.kie.workbench.common.dmn.showcase.client.common.wait.WaitUtils;
 import org.kie.workbench.common.dmn.showcase.client.selenium.component.DecisionNavigator;
 import org.kie.workbench.common.dmn.showcase.client.selenium.locator.CommonCSSLocator;
 import org.kie.workbench.common.dmn.showcase.client.selenium.locator.EditorXPathLocator;
 import org.kie.workbench.common.dmn.showcase.client.selenium.locator.PropertiesPanelXPathLocator;
+import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
@@ -60,13 +64,13 @@ import static org.kie.workbench.common.dmn.api.definition.model.DMNModelInstrume
 
 public class DMNDesignerBaseIT {
 
-    protected static final Map<String, String> NAMESPACES = new Maps.Builder<String, String>()
-            .put(DMN.getPrefix(), DMN.getUri())
-            .put(DMNDI.getPrefix(), DMNDI.getUri())
-            .put(DI.getPrefix(), DI.getUri())
-            .put(DC.getPrefix(), DC.getUri())
-            .put(KIE.getPrefix(), KIE.getUri())
-            .build();
+    protected static final Map<String, String> NAMESPACES =
+            Stream.of(new AbstractMap.SimpleEntry<>(DMN.getPrefix(), DMN.getUri()),
+                      new AbstractMap.SimpleEntry<>(DMNDI.getPrefix(), DMNDI.getUri()),
+                      new AbstractMap.SimpleEntry<>(DI.getPrefix(), DI.getUri()),
+                      new AbstractMap.SimpleEntry<>(DC.getPrefix(), DC.getUri()),
+                      new AbstractMap.SimpleEntry<>(KIE.getPrefix(), KIE.getUri()))
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
     private static final Logger LOG = LoggerFactory.getLogger(DMNDesignerBaseIT.class);
 
@@ -94,7 +98,7 @@ public class DMNDesignerBaseIT {
 
     @BeforeClass
     public static void setupClass() {
-        WebDriverManager.firefoxdriver().setup();
+        WebDriverManager.firefoxdriver().useMirror().setup();
     }
 
     @Before
@@ -173,6 +177,14 @@ public class DMNDesignerBaseIT {
         return (String) result;
     }
 
+    protected void selectAutomaticLayout() {
+        try {
+            driver.findElement(By.xpath("//button[@data-field='yes-button']")).click();
+        } catch (NoSuchElementException e) {
+            // if there is no button, allow test to continue
+        }
+    }
+
     protected void executeDMNTestCase(final String directory,
                                       final String file,
                                       final String logMessage) throws IOException {
@@ -180,6 +192,8 @@ public class DMNDesignerBaseIT {
 
         LOG.trace(logMessage);
         setContent(loadResource(directory + "/" + file));
+
+        selectAutomaticLayout();
 
         final String actual = getContent();
         assertThat(actual).isNotBlank();
