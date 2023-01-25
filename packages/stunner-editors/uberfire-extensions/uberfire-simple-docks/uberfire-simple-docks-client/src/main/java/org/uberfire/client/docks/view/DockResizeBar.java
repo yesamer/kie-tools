@@ -182,9 +182,6 @@ public class DockResizeBar extends FlowPanel implements OuiaComponent {
     private double calculateDockSize(MouseMoveEvent event,
                                      DocksBar docksBar) {
         UberfireDockPosition position = docksBar.getPosition();
-        if (position == UberfireDockPosition.WEST) {
-            return docksBar.getExpandedBarSize() + (event.getClientX() - getAbsoluteLeft());
-        }
         if (position == UberfireDockPosition.EAST) {
             return docksBar.getExpandedBarSize() + (getAbsoluteLeft() - event.getClientX());
         }

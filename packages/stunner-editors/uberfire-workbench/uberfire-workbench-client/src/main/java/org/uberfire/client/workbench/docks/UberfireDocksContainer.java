@@ -55,9 +55,6 @@ public class UberfireDocksContainer {
         } else if (position == UberfireDockPosition.EAST) {
             rootContainer.addEast(widget,
                                   size);
-        } else if (position == UberfireDockPosition.WEST) {
-            rootContainer.addWest(widget,
-                                  size);
         }
     }
 

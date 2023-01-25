@@ -38,12 +38,6 @@ public interface DocksCss extends CssResource {
     @ClassName("dockExpanded")
     String dockExpanded();
 
-    @ClassName("dockExpandedLabelWest")
-    String dockExpandedLabelWest();
-
-    @ClassName("dockExpandedButtonWest")
-    String dockExpandedButtonWest();
-
     @ClassName("dockExpandedLabelEast")
     String dockExpandedLabelEast();
 

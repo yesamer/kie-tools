@@ -28,17 +28,6 @@ public enum UberfireDockPosition {
             return "S";
         }
     },
-    WEST {
-        @Override
-        public boolean allowSingleDockItem() {
-            return true;
-        }
-
-        @Override
-        public String getShortName() {
-            return "W";
-        }
-    },
     EAST {
         @Override
         public boolean allowSingleDockItem() {
