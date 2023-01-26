@@ -49,10 +49,7 @@ public class UberfireDocksContainer {
     public void add(UberfireDockPosition position,
                     Widget widget,
                     Double size) {
-        if (position == UberfireDockPosition.SOUTH) {
-            rootContainer.addSouth(widget,
-                                   size);
-        } else if (position == UberfireDockPosition.EAST) {
+        if (position == UberfireDockPosition.EAST) {
             rootContainer.addEast(widget,
                                   size);
         }

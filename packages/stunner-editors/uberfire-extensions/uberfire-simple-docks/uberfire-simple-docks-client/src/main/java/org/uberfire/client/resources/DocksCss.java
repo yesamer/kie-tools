@@ -20,9 +20,6 @@ import com.google.gwt.resources.client.CssResource;
 
 public interface DocksCss extends CssResource {
 
-    @ClassName("gradientTopBottom")
-    String gradientTopBottom();
-
     @ClassName("gradientBottomTop")
     String gradientBottomTop();
 

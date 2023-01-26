@@ -90,10 +90,7 @@ public class DocksExpandedBar
     }
 
     private void setupComponents() {
-        if (position == UberfireDockPosition.SOUTH) {
-            titlePanel.add(collapse);
-            titlePanel.add(title);
-        } else if (position == UberfireDockPosition.EAST) {
+        if (position == UberfireDockPosition.EAST) {
             titlePanel.add(collapse);
             titlePanel.add(title);
         }
@@ -124,12 +121,7 @@ public class DocksExpandedBar
     }
 
     private void setupCSS() {
-        if (position == UberfireDockPosition.SOUTH) {
-            titlePanel.addStyleName(CSS.CSS().dockExpandedContentPanelSouth());
-            title.addStyleName(CSS.CSS().dockExpandedLabelSouth());
-            collapse.addStyleName(CSS.CSS().dockExpandedButtonSouth());
-            collapse.setIcon(IconType.CHEVRON_DOWN);
-        } else if (position == UberfireDockPosition.EAST) {
+        if (position == UberfireDockPosition.EAST) {
             title.addStyleName(CSS.CSS().dockExpandedLabelEast());
             collapse.addStyleName(CSS.CSS().dockExpandedButtonEast());
             collapse.setIcon(IconType.CHEVRON_RIGHT);

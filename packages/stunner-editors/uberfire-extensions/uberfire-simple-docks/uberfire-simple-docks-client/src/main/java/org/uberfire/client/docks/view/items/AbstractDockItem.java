@@ -50,7 +50,7 @@ public abstract class AbstractDockItem extends Composite implements OuiaComponen
     public static AbstractDockItem create(UberfireDock dock,
                                           ParameterizedCommand<String> openCommand,
                                           ParameterizedCommand<String> closeCommand) {
-        if (dock.getDockPosition() == UberfireDockPosition.SOUTH) {
+        if (dock.getDockPosition() == UberfireDockPosition.EAST) {
             return new SouthDockItem(dock,
                                      openCommand,
                                      closeCommand);
