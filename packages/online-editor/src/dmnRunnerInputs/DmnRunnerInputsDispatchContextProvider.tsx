@@ -16,11 +16,11 @@
 
 import * as React from "react";
 import { useCallback, useMemo } from "react";
-import { WorkspaceFile } from "../workspace/WorkspacesContext";
+import { WorkspaceFile } from "@kie-tools-core/workspaces-git-fs/dist/context/WorkspacesContext";
 import { DmnRunnerInputsService } from "./DmnRunnerInputsService";
 import { InputRow } from "@kie-tools/form-dmn";
 import { DmnRunnerInputsDispatchContext } from "./DmnRunnerInputsDispatchContext";
-import { decoder } from "../workspace/encoderdecoder/EncoderDecoder";
+import { decoder } from "@kie-tools-core/workspaces-git-fs/dist/encoderdecoder/EncoderDecoder";
 import { useSyncedCompanionFs } from "../companionFs/CompanionFsHooks";
 
 export function DmnRunnerInputsDispatchContextProvider(props: React.PropsWithChildren<{}>) {
@@ -40,9 +40,9 @@ export function DmnRunnerInputsDispatchContextProvider(props: React.PropsWithChi
           workspaceId: workspaceFile.workspaceId,
           workspaceFileRelativePath: workspaceFile.relativePath,
         });
-        const previousInputRows = await inputs
-          ?.getFileContents()
-          .then((content) => dmnRunnerInputsService.parseDmnRunnerInputs(decoder.decode(content)));
+
+        const content = await inputs?.getFileContents();
+        const previousInputRows = dmnRunnerInputsService.parseDmnRunnerInputs(decoder.decode(content));
         await dmnRunnerInputsService.companionFsService.update(
           { workspaceId: workspaceFile.workspaceId, workspaceFileRelativePath: workspaceFile.relativePath },
           dmnRunnerInputsService.stringifyDmnRunnerInputs(newInputRows, previousInputRows)

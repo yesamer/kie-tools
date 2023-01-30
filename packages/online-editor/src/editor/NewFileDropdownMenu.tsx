@@ -15,8 +15,8 @@
  */
 
 import * as React from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useWorkspaces, WorkspaceFile } from "../workspace/WorkspacesContext";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useWorkspaces, WorkspaceFile } from "@kie-tools-core/workspaces-git-fs/dist/context/WorkspacesContext";
 import { FileLabel } from "../filesList/FileLabel";
 import { Flex, FlexItem } from "@patternfly/react-core/dist/js/layouts/Flex";
 import { Divider } from "@patternfly/react-core/dist/js/components/Divider";
@@ -34,18 +34,24 @@ import {
   useEditorEnvelopeLocator,
 } from "../envelopeLocator/hooks/EditorEnvelopeLocatorContext";
 import { Button, ButtonVariant } from "@patternfly/react-core/dist/js/components/Button";
-import { AlertsController, useAlert } from "../alerts/Alerts";
 import { Alert, AlertActionCloseButton } from "@patternfly/react-core/dist/js/components/Alert";
 import { basename, extname } from "path";
-import { ImportFromUrlForm } from "../workspace/components/ImportFromUrlForm";
-import { UrlType } from "../workspace/hooks/ImportableUrlHooks";
+import { ImportSingleFileFromUrlForm } from "../importFromUrl/ImportSingleFileFromUrlForm";
+import { ImportableUrl, UrlType, useImportableUrl } from "../importFromUrl/ImportableUrlHooks";
 import { useRoutes } from "../navigation/Hooks";
-import { decoder } from "../workspace/encoderdecoder/EncoderDecoder";
+import { fetchSingleFileContent } from "../importFromUrl/fetchSingleFileContent";
+import { useAuthSession, useAuthSessions } from "../authSessions/AuthSessionsContext";
+import { useGitHubClient } from "../github/Hooks";
+import { useAuthProviders } from "../authProviders/AuthProvidersContext";
+import { getCompatibleAuthSessionWithUrlDomain } from "../authSessions/CompatibleAuthSessions";
+import { decoder } from "@kie-tools-core/workspaces-git-fs/dist/encoderdecoder/EncoderDecoder";
+import { WorkspaceDescriptor } from "@kie-tools-core/workspaces-git-fs/dist/worker/api/WorkspaceDescriptor";
+import { useGlobalAlert } from "../alerts";
+import { useBitbucketClient } from "../bitbucket/Hooks";
 
 export function NewFileDropdownMenu(props: {
-  alerts: AlertsController | undefined;
   destinationDirPath: string;
-  workspaceId: string;
+  workspaceDescriptor: WorkspaceDescriptor;
   onAddFile: (file?: WorkspaceFile) => Promise<void>;
 }) {
   const uploadFileInputRef = useRef<HTMLInputElement>(null);
@@ -79,7 +85,7 @@ export function NewFileDropdownMenu(props: {
   const addEmptyFile = useCallback(
     async (extension: SupportedFileExtensions) => {
       const file = await workspaces.addEmptyFile({
-        workspaceId: props.workspaceId,
+        workspaceId: props.workspaceDescriptor.workspaceId,
         destinationDirRelativePath: props.destinationDirPath,
         extension,
       });
@@ -100,55 +106,7 @@ export function NewFileDropdownMenu(props: {
   const [isImporting, setImporting] = useState(false);
   const [importingError, setImportingError] = useState<string>();
 
-  const importFromUrl = useCallback(
-    async (urlString?: string) => {
-      if (!urlString) {
-        return;
-      }
-
-      setImporting(true);
-      setImportingError(undefined);
-
-      try {
-        const url = new URL(urlString);
-        const extension = extname(url.pathname).replace(".", "");
-        const name = decodeURIComponent(basename(url.pathname, extname(url.pathname)));
-
-        const response = await fetch(urlString);
-        if (!response.ok) {
-          setImportingError(`${response.status}${response.statusText ? `- ${response.statusText}` : ""}`);
-          return;
-        }
-
-        const content = await response.text();
-
-        const file = await workspaces.addFile({
-          workspaceId: props.workspaceId,
-          name,
-          extension,
-          content,
-          destinationDirRelativePath: props.destinationDirPath,
-        });
-        await props.onAddFile(file);
-      } catch (e) {
-        setImportingError(e.toString());
-      } finally {
-        // setImporting(false);
-      }
-    },
-    [props, workspaces]
-  );
-
-  const addSample = useCallback(
-    (extension: SupportedFileExtensions) =>
-      importFromUrl(
-        `${window.location.origin}${window.location.pathname}${routes.static.sample.path({ type: extension })}`
-      ),
-    [importFromUrl, routes]
-  );
-
-  const successfullyUploadedAlert = useAlert(
-    props.alerts,
+  const successfullyUploadedAlert = useGlobalAlert(
     useCallback(({ close }, staticArgs: { qtt: number }) => {
       return (
         <Alert
@@ -180,7 +138,7 @@ export function NewFileDropdownMenu(props: {
       const uploadedFiles = await Promise.all(
         filesToUpload.map(async (file) => {
           return workspaces.addFile({
-            workspaceId: props.workspaceId,
+            workspaceId: props.workspaceDescriptor.workspaceId,
             name: basename(file.path, extname(file.path)),
             extension: extname(file.path).replace(".", ""),
             content: file.content,
@@ -198,6 +156,92 @@ export function NewFileDropdownMenu(props: {
   );
 
   const [url, setUrl] = useState("");
+  const [authSessionId, setAuthSessionId] = useState(props.workspaceDescriptor.gitAuthSessionId);
+
+  const importableUrl = useImportableUrl(
+    url,
+    useMemo(
+      () => [
+        UrlType.FILE,
+        UrlType.GIST_DOT_GITHUB_DOT_COM_FILE,
+        UrlType.GITHUB_DOT_COM_FILE,
+        UrlType.BITBUCKET_DOT_ORG_FILE,
+        UrlType.BITBUCKET_DOT_ORG_SNIPPET_FILE,
+      ],
+      []
+    )
+  );
+
+  const { authSession } = useAuthSession(authSessionId);
+  const gitHubClient = useGitHubClient(authSession);
+  const bitbucketClient = useBitbucketClient(authSession);
+
+  // Select authSession based on the importableUrl domain (begin)
+  const authProviders = useAuthProviders();
+  const { authSessions, authSessionStatus } = useAuthSessions();
+
+  useEffect(() => {
+    if (importableUrl.error) {
+      return;
+    }
+
+    const urlDomain = importableUrl.url?.hostname;
+
+    const { compatible } = getCompatibleAuthSessionWithUrlDomain({
+      authProviders,
+      authSessions,
+      authSessionStatus,
+      urlDomain,
+    });
+    setAuthSessionId(compatible[0]!.id);
+  }, [authProviders, authSessionStatus, authSessions, importableUrl]);
+  // Select authSession based on the importableUrl domain (end)
+
+  const importFromUrl = useCallback(
+    async (importableUrl: ImportableUrl) => {
+      if (!importableUrl.url) {
+        return;
+      }
+
+      setImporting(true);
+      setImportingError(undefined);
+
+      try {
+        const { error, rawUrl, content } = await fetchSingleFileContent(importableUrl, gitHubClient, bitbucketClient);
+        if (error) {
+          setImportingError(error);
+          return;
+        }
+
+        const extension = extname(rawUrl!.pathname).replace(".", "");
+        const name = decodeURIComponent(basename(rawUrl!.pathname, extname(rawUrl!.pathname)));
+
+        const file = await workspaces.addFile({
+          workspaceId: props.workspaceDescriptor.workspaceId,
+          name,
+          extension,
+          content: content!,
+          destinationDirRelativePath: props.destinationDirPath,
+        });
+        await props.onAddFile(file);
+      } catch (e) {
+        setImportingError(e.toString());
+      } finally {
+        setImporting(false);
+      }
+    },
+    [gitHubClient, bitbucketClient, workspaces, props]
+  );
+
+  const sampleUrl = useCallback(
+    (extension: SupportedFileExtensions) =>
+      `${window.location.origin}${window.location.pathname}${routes.static.sample.path({ type: extension })}`,
+    [routes]
+  );
+
+  const importableUrlBpmnSample = useImportableUrl(sampleUrl("bpmn"));
+  const importableUrlDmnSample = useImportableUrl(sampleUrl("dmn"));
+  const importableUrlPmmlSample = useImportableUrl(sampleUrl("pmml"));
 
   return (
     <Menu
@@ -254,33 +298,45 @@ export function NewFileDropdownMenu(props: {
               <DrilldownMenu id={"samplesMenu"}>
                 <MenuItem direction="up">Back</MenuItem>
                 <Divider />
-                <MenuItem
-                  onClick={() => addSample("bpmn")}
-                  description="BPMN files are used to generate business workflows."
-                >
-                  <Flex>
-                    <FlexItem>Sample</FlexItem>
-                    <FlexItem>
-                      <FileLabel extension={"bpmn"} />
-                    </FlexItem>
-                  </Flex>
-                </MenuItem>
-                <MenuItem onClick={() => addSample("dmn")} description="DMN files are used to generate decision models">
-                  <Flex>
-                    <FlexItem>Sample</FlexItem>
-                    <FlexItem>
-                      <FileLabel extension={"dmn"} />
-                    </FlexItem>
-                  </Flex>
-                </MenuItem>
-                <MenuItem onClick={() => addSample("pmml")} description="PMML files are used to generate scorecards">
-                  <Flex>
-                    <FlexItem>Sample</FlexItem>
-                    <FlexItem>
-                      <FileLabel extension={"pmml"} />
-                    </FlexItem>
-                  </Flex>
-                </MenuItem>
+                <MenuGroup label={" "}>
+                  <MenuItem
+                    onClick={() => importFromUrl(importableUrlBpmnSample)}
+                    description="BPMN files are used to generate business workflows."
+                  >
+                    <Flex>
+                      <FlexItem>Sample</FlexItem>
+                      <FlexItem>
+                        <FileLabel extension={"bpmn"} />
+                      </FlexItem>
+                    </Flex>
+                  </MenuItem>
+                </MenuGroup>
+                <MenuGroup label={" "}>
+                  <MenuItem
+                    onClick={() => importFromUrl(importableUrlDmnSample)}
+                    description="DMN files are used to generate decision models"
+                  >
+                    <Flex>
+                      <FlexItem>Sample</FlexItem>
+                      <FlexItem>
+                        <FileLabel extension={"dmn"} />
+                      </FlexItem>
+                    </Flex>
+                  </MenuItem>
+                </MenuGroup>
+                <MenuGroup label={" "}>
+                  <MenuItem
+                    onClick={() => importFromUrl(importableUrlPmmlSample)}
+                    description="PMML files are used to generate scorecards"
+                  >
+                    <Flex>
+                      <FlexItem>Sample</FlexItem>
+                      <FlexItem>
+                        <FileLabel extension={"pmml"} />
+                      </FlexItem>
+                    </Flex>
+                  </MenuItem>
+                </MenuGroup>
               </DrilldownMenu>
             }
           >
@@ -296,23 +352,27 @@ export function NewFileDropdownMenu(props: {
                 <Divider />
                 {/* Allows for arrows to work when editing the text. */}
                 <MenuInput onKeyDown={(e) => e.stopPropagation()}>
-                  <ImportFromUrlForm
+                  <ImportSingleFileFromUrlForm
+                    authSessionSelectHelperText={`Changing it here won't change it on '${props.workspaceDescriptor.name}'`}
                     importingError={importingError}
-                    allowedTypes={[UrlType.FILE, UrlType.GIST_FILE, UrlType.GITHUB_FILE]}
+                    importableUrl={importableUrl}
                     urlInputRef={urlInputRef}
                     url={url}
-                    onChange={(url) => {
+                    setUrl={(url) => {
                       setUrl(url);
                       setImportingError(undefined);
                     }}
-                    onSubmit={() => importFromUrl(url)}
+                    authSessionId={authSessionId}
+                    setAuthSessionId={setAuthSessionId}
+                    onSubmit={() => importFromUrl(importableUrl)}
                   />
                 </MenuInput>
                 <MenuInput>
                   <Button
-                    variant={url.length > 0 ? ButtonVariant.primary : ButtonVariant.secondary}
+                    variant={ButtonVariant.primary}
+                    isDisabled={!!importableUrl.error}
                     isLoading={isImporting}
-                    onClick={() => importFromUrl(url)}
+                    onClick={() => importFromUrl(importableUrl)}
                   >
                     Import
                   </Button>

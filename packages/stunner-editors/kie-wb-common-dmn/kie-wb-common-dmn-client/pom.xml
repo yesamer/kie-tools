@@ -169,7 +169,7 @@
 
     <!-- GWT and GWT Extensions -->
     <dependency>
-      <groupId>com.google.gwt</groupId>
+      <groupId>org.gwtproject</groupId>
       <artifactId>gwt-user</artifactId>
       <scope>provided</scope>
     </dependency>
@@ -295,7 +295,7 @@
       <artifactId>kie-dmn-feel-gwt-functions</artifactId>
       <exclusions>
         <exclusion>
-          <groupId>org.antlr</groupId>
+          <groupId>org.antlr4gwt</groupId>
           <artifactId>antlr4-runtime</artifactId>
         </exclusion>
       </exclusions>
@@ -336,12 +336,12 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.antlr</groupId>
+      <groupId>org.antlr4gwt</groupId>
       <artifactId>antlr4gwt-runtime</artifactId>
       <scope>provided</scope>
       <exclusions>
         <exclusion>
-          <groupId>org.antlr</groupId>
+          <groupId>org.antlr4gwt</groupId>
           <artifactId>antlr4gwt-annotations</artifactId>
         </exclusion>
         <exclusion>

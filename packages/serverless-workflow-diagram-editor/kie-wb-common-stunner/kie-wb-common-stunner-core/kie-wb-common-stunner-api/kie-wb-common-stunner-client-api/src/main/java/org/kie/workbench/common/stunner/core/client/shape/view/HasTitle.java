@@ -95,7 +95,7 @@ public interface HasTitle<T> {
         }
     }
 
-    T setTextSizeConstraints(final Size sizeConstraints);
+    T setTitleSizeConstraints(final Size sizeConstraints);
 
     T setTitlePosition(final VerticalAlignment verticalAlignment,
                        final HorizontalAlignment horizontalAlignment,
@@ -103,6 +103,10 @@ public interface HasTitle<T> {
                        final Orientation orientation);
 
     T setTitle(final String title);
+
+    default void setTitleBackgroundColor(String color) {
+
+    }
 
     T setMargins(final Map<Enum, Double> margins);
 
@@ -142,7 +146,7 @@ public interface HasTitle<T> {
         return (T) this;
     }
 
-    default T setTextWrapper(final TextWrapperStrategy strategy) {
+    default T setTitleWrapper(final TextWrapperStrategy strategy) {
         return (T) this;
     }
 
@@ -150,7 +154,7 @@ public interface HasTitle<T> {
 
     T moveTitleToTop();
 
-    default void setTextBoundaries(final double width, final double height) {
+    default void setTitleBoundaries(final double width, final double height) {
 
     }
 }

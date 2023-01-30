@@ -16,6 +16,7 @@
 
 export const names = {
   app: "App",
+  bitbucket: "Bitbucket",
   bpmn: "BPMN",
   businessModeler: {
     name: "Business Modeler",
@@ -29,12 +30,14 @@ export const names = {
   desktop: "Desktop",
   devSandbox: "Developer Sandbox for Red Hat OpenShift",
   dmn: "DMN",
-  dmnDevSandbox: "DMN Developer Sandbox",
+  dmnDevDeployment: "DMN Dev deployment",
+  devDeployments: "Dev deployments",
   dmnRunner: "DMN Runner",
   kieSandboxExtendedServices: "KIE Sandbox Extended Services",
   fedora: "Fedora",
   pmml: "PMML",
   dropbox: "Dropbox",
+  git: "Git",
   github: "GitHub",
   kogito: "Kogito",
   linux: "Linux",

@@ -133,7 +133,7 @@ public class Text extends Shape<Text> {
         return wrapper.getBoundingBox();
     }
 
-    private BoundingBox getBoundingBoxForString(String string) {
+    public BoundingBox getBoundingBoxForString(String string) {
         return textUtils.getBoundingBox(string,
                                         getFontSize(),
                                         getFontStyle(),
@@ -516,7 +516,7 @@ public class Text extends Shape<Text> {
     /**
      * Sets the {@link TextBaseLine}
      *
-     * @param baseline
+     * @param baseLine
      * @return this Text
      */
     public Text setTextBaseLine(TextBaseLine baseLine) {

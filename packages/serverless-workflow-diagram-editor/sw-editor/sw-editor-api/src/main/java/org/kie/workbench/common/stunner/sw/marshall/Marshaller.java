@@ -18,7 +18,9 @@ package org.kie.workbench.common.stunner.sw.marshall;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
@@ -27,7 +29,6 @@ import elemental2.core.Global;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.IThenable;
 import elemental2.promise.Promise;
-import jsinterop.base.Js;
 import org.kie.workbench.common.stunner.core.api.DefinitionManager;
 import org.kie.workbench.common.stunner.core.api.FactoryManager;
 import org.kie.workbench.common.stunner.core.client.service.ClientRuntimeError;
@@ -63,6 +64,7 @@ import org.kie.workbench.common.stunner.sw.definition.State;
 import org.kie.workbench.common.stunner.sw.definition.SwitchState;
 import org.kie.workbench.common.stunner.sw.definition.Transition;
 import org.kie.workbench.common.stunner.sw.definition.Workflow;
+import org.kie.workbench.common.stunner.sw.definition.Workflow_JsonMapperImpl;
 import org.kie.workbench.common.stunner.sw.factory.DiagramFactory;
 import org.uberfire.client.promise.Promises;
 
@@ -112,6 +114,9 @@ public class Marshaller {
     private Context context;
     private Workflow workflow;
 
+    private final Workflow_JsonMapperImpl mapper = Workflow_JsonMapperImpl.INSTANCE;
+
+
     @Inject
     public Marshaller(DefinitionManager definitionManager,
                       FactoryManager factoryManager,
@@ -127,12 +132,8 @@ public class Marshaller {
     @SuppressWarnings("all")
     public Promise<ParseResult> unmarshallGraph(String raw) {
         try {
-            final Object root = parse(raw);
-            if (null == workflow) {
-                workflow = parser.parse(Js.uncheckedCast(root));
-            } else {
-                parser.reParse(workflow, Js.uncheckedCast(root));
-            }
+            workflow = parser.parse(mapper.fromJSON(raw));
+            MarshallerUtils.onPostDeserialize(raw, workflow);
         } catch (Exception e) {
             return promises.create(new Promise.PromiseExecutorCallbackFn<ParseResult>() {
                 @Override
@@ -147,7 +148,7 @@ public class Marshaller {
         HashMap<String, String> previousNameToUUIDBindings = null;
         try {
             // TODO: Use dedicated factory instead.
-            String workflowId = workflow.id != null ? workflow.id : workflow.key;
+            String workflowId = workflow.getId() != null ? workflow.getId() : workflow.getKey();
             graph = GraphImpl.build(workflowId);
             final Index index = new MapIndexBuilder().build(graph);
 
@@ -200,7 +201,18 @@ public class Marshaller {
         removeEdgesWithNullTargets(graph);
 
         try {
-            final Promise<Node> layout = AutoLayout.applyLayout(graph, context.getWorkflowRootNode(), promises, builderContext.buildExecutionContext(), false);
+
+            final String startNodeUuId = getStartNodeUuid(graph);
+            final String endNodeUuid = getEndNodeUuid(graph);
+
+            final Promise<Node> layout = AutoLayout.applyLayout(graph,
+                                                                context.getWorkflowRootNode(),
+                                                                promises,
+                                                                builderContext.buildExecutionContext(),
+                                                                false,
+                                                                startNodeUuId,
+                                                                endNodeUuid
+            );
             return promises.create(new Promise.PromiseExecutorCallbackFn<ParseResult>() {
                 @Override
                 public void onInvoke(ResolveCallbackFn<ParseResult> success, RejectCallbackFn reject) {
@@ -226,6 +238,31 @@ public class Marshaller {
         }
     }
 
+    private String getEndNodeUuid(final GraphImpl<Object> graph) {
+
+        final Optional<Node> endNode = StreamSupport.stream(graph.nodes().spliterator(), false)
+                .filter(Marshaller::isEndState)
+                .findFirst();
+
+        if (endNode.isPresent()) {
+            return endNode.get().getUUID();
+        }
+
+        return null;
+    }
+
+    private String getStartNodeUuid(final GraphImpl<Object> graph) {
+
+        final Optional<Node> startNode = StreamSupport.stream(graph.nodes().spliterator(), false)
+                .filter(Marshaller::isStartState)
+                .findFirst();
+        if (startNode.isPresent()) {
+            return startNode.get().getUUID();
+        }
+
+        return null;
+    }
+
     @SuppressWarnings("unchecked")
     public void removeEdgesWithNullTargets(GraphImpl<Object> graph) {
         for (Node<View, Edge> node : graph.nodes()) {
@@ -238,8 +275,10 @@ public class Marshaller {
                         .filter(edge -> edge.getTargetNode() == null)
                         .collect(Collectors.toList());
                 for (Edge e : invalidEdges) {
-                    getContext().addMessage(new Message(MessageCode.INVALID_TARGET_NAME,
-                                                        ((State) ((View) e.getSourceNode().getContent()).getDefinition()).name));
+                    if (((View) e.getSourceNode().getContent()).getDefinition() instanceof State) {
+                        getContext().addMessage(new Message(MessageCode.INVALID_TARGET_NAME,
+                                                            ((State) ((View) e.getSourceNode().getContent()).getDefinition()).getName()));
+                    }
                 }
                 node.getOutEdges().clear();
                 node.getOutEdges().addAll(edges);
@@ -284,7 +323,7 @@ public class Marshaller {
         Node node = unmarshallNode(builderContext, bean);
         // TODO: Handle errors? if any (no rules execution context)?
         builderContext.execute();
-        return AutoLayout.applyLayout(context.getGraph(), node, promises, builderContext.buildExecutionContext(), true);
+        return AutoLayout.applyLayout(context.getGraph(), node, promises, builderContext.buildExecutionContext(), true, "StartingNode", "EndingNode");
     }
 
     @FunctionalInterface
@@ -370,9 +409,10 @@ public class Marshaller {
 
     @SuppressWarnings("all")
     public Promise<String> marshallNode(Node node) {
-        Object bean = marshallNode(context, node);
-        String raw = stringify(bean);
-        return promises.resolve(raw);
+        Workflow bean = marshallNode(context, node);
+        String raw = mapper.toJSON(bean);
+        String result = MarshallerUtils.onPostSerialize(raw, bean);
+        return promises.resolve(result);
     }
 
     @FunctionalInterface

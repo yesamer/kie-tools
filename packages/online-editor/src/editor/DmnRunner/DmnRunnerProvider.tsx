@@ -17,24 +17,21 @@
 import * as React from "react";
 import { PropsWithChildren, useCallback, useEffect, useMemo, useState } from "react";
 import { EditorPageDockDrawerRef } from "../EditorPageDockDrawer";
-import { useWorkspaces, WorkspaceFile } from "../../workspace/WorkspacesContext";
+import { useWorkspaces, WorkspaceFile } from "@kie-tools-core/workspaces-git-fs/dist/context/WorkspacesContext";
 import { DmnRunnerMode, DmnRunnerStatus } from "./DmnRunnerStatus";
 import { DmnRunnerDispatchContext, DmnRunnerStateContext } from "./DmnRunnerContext";
-import { DmnRunnerModelPayload, DmnRunnerService } from "./DmnRunnerService";
+import { KieSandboxExtendedServicesModelPayload } from "../../kieSandboxExtendedServices/KieSandboxExtendedServicesClient";
 import { KieSandboxExtendedServicesStatus } from "../../kieSandboxExtendedServices/KieSandboxExtendedServicesStatus";
 import { QueryParams } from "../../navigation/Routes";
 import { jsonParseWithDate } from "../../json/JsonParse";
-import { usePrevious } from "../../reactExt/Hooks";
-import { useOnlineI18n } from "../../i18n";
+import { usePrevious } from "@kie-tools-core/react-hooks/dist/usePrevious";
 import { useQueryParams } from "../../queryParams/QueryParamsContext";
 import { useHistory } from "react-router";
 import { useRoutes } from "../../navigation/Hooks";
-import { useKieSandboxExtendedServices } from "../../kieSandboxExtendedServices/KieSandboxExtendedServicesContext";
-import { Notification } from "@kie-tools-core/notifications/dist/api";
+import { useExtendedServices } from "../../kieSandboxExtendedServices/KieSandboxExtendedServicesContext";
 import { DmnSchema, InputRow } from "@kie-tools/form-dmn";
-import { useSettings } from "../../settings/SettingsContext";
 import { useDmnRunnerInputs } from "../../dmnRunnerInputs/DmnRunnerInputsHook";
-import { decoder } from "../../workspace/encoderdecoder/EncoderDecoder";
+import { decoder } from "@kie-tools-core/workspaces-git-fs/dist/encoderdecoder/EncoderDecoder";
 
 interface Props {
   editorPageDock: EditorPageDockDrawerRef | undefined;
@@ -42,13 +39,12 @@ interface Props {
 }
 
 export function DmnRunnerProvider(props: PropsWithChildren<Props>) {
-  const { i18n } = useOnlineI18n();
   const queryParams = useQueryParams();
   const history = useHistory();
   const routes = useRoutes();
-  const kieSandboxExtendedServices = useKieSandboxExtendedServices();
+  const extendedServices = useExtendedServices();
   const workspaces = useWorkspaces();
-  const settings = useSettings();
+
   const {
     inputRows,
     setInputRows,
@@ -68,88 +64,49 @@ export function DmnRunnerProvider(props: PropsWithChildren<Props>) {
     return isExpanded ? DmnRunnerStatus.AVAILABLE : DmnRunnerStatus.UNAVAILABLE;
   }, [isExpanded]);
 
-  const service = useMemo(
-    () => new DmnRunnerService(settings.kieSandboxExtendedServices.config.buildUrl()),
-    [settings.kieSandboxExtendedServices.config]
-  );
-
   const preparePayload = useCallback(
-    async (data?: any) => {
+    async (formData?: InputRow) => {
       const files = (
         await workspaces.getFiles({
           workspaceId: props.workspaceFile.workspaceId,
         })
       ).filter((f) => f.extension === "dmn");
 
-      const resourcePromises = files.map(async (f) => ({
-        URI: f.relativePath,
-        content: decoder.decode(await f.getFileContents()),
+      const contents = await Promise.all(files.map((file) => file.getFileContents()));
+      const resources = contents.map((content, i) => ({
+        URI: files[i].relativePath,
+        content: decoder.decode(content),
       }));
 
       return {
         mainURI: props.workspaceFile.relativePath,
-        resources: await Promise.all(resourcePromises),
-        context: data,
-      } as DmnRunnerModelPayload;
+        resources,
+        context: formData,
+      } as KieSandboxExtendedServicesModelPayload;
     },
     [props.workspaceFile, workspaces]
   );
 
-  const updateFormSchema = useCallback(async () => {
-    if (props.workspaceFile.extension !== "dmn") {
-      return;
-    }
-
-    try {
-      const payload = await preparePayload();
-      setJsonSchema(await service.formSchema(payload));
-    } catch (err) {
-      console.error(err);
-      setError(true);
-    }
-  }, [props.workspaceFile.extension, preparePayload, service]);
-
   useEffect(() => {
-    if (props.workspaceFile.extension !== "dmn") {
+    if (
+      props.workspaceFile.extension !== "dmn" ||
+      extendedServices.status !== KieSandboxExtendedServicesStatus.RUNNING
+    ) {
       setExpanded(false);
       return;
     }
 
-    updateFormSchema();
-  }, [updateFormSchema, props.workspaceFile.extension, props.workspaceFile]);
-
-  const validate = useCallback(async () => {
-    if (props.workspaceFile.extension !== "dmn") {
-      return;
-    }
-
-    if (kieSandboxExtendedServices.status !== KieSandboxExtendedServicesStatus.RUNNING) {
-      props.editorPageDock?.setNotifications(i18n.terms.validation, "", []);
-      return;
-    }
-
-    const payload: DmnRunnerModelPayload = {
-      mainURI: props.workspaceFile.relativePath,
-      resources: [
-        {
-          URI: props.workspaceFile.relativePath,
-          content: decoder.decode(await props.workspaceFile.getFileContents()),
-        },
-      ],
-    };
-    const validationResults = await service.validate(payload);
-    const notifications: Notification[] = validationResults.map((validationResult: any) => ({
-      type: "PROBLEM",
-      path: "",
-      severity: validationResult.severity,
-      message: `${validationResult.messageType}: ${validationResult.message}`,
-    }));
-    props.editorPageDock?.setNotifications(i18n.terms.validation, "", notifications);
-  }, [props.workspaceFile, props.editorPageDock, kieSandboxExtendedServices.status, service, i18n.terms.validation]);
-
-  useEffect(() => {
-    validate();
-  }, [validate]);
+    preparePayload()
+      .then((payload) => {
+        extendedServices.client.formSchema(payload).then((jsonSchema) => {
+          setJsonSchema(jsonSchema);
+        });
+      })
+      .catch((err) => {
+        console.error(err);
+        setError(true);
+      });
+  }, [extendedServices.status, extendedServices.client, props.workspaceFile.extension, preparePayload]);
 
   useEffect(() => {
     if (!jsonSchema || !queryParams.has(QueryParams.DMN_RUNNER_FORM_INPUTS)) {
@@ -169,7 +126,7 @@ export function DmnRunnerProvider(props: PropsWithChildren<Props>) {
     }
   }, [jsonSchema, history, routes, queryParams, setInputRows, props.workspaceFile]);
 
-  const prevKieSandboxExtendedServicesStatus = usePrevious(kieSandboxExtendedServices.status);
+  const prevKieSandboxExtendedServicesStatus = usePrevious(extendedServices.status);
   useEffect(() => {
     if (props.workspaceFile.extension !== "dmn") {
       return;
@@ -179,18 +136,18 @@ export function DmnRunnerProvider(props: PropsWithChildren<Props>) {
       prevKieSandboxExtendedServicesStatus &&
       prevKieSandboxExtendedServicesStatus !== KieSandboxExtendedServicesStatus.AVAILABLE &&
       prevKieSandboxExtendedServicesStatus !== KieSandboxExtendedServicesStatus.RUNNING &&
-      kieSandboxExtendedServices.status === KieSandboxExtendedServicesStatus.RUNNING
+      extendedServices.status === KieSandboxExtendedServicesStatus.RUNNING
     ) {
       setExpanded(true);
     }
 
     if (
-      kieSandboxExtendedServices.status === KieSandboxExtendedServicesStatus.STOPPED ||
-      kieSandboxExtendedServices.status === KieSandboxExtendedServicesStatus.NOT_RUNNING
+      extendedServices.status === KieSandboxExtendedServicesStatus.STOPPED ||
+      extendedServices.status === KieSandboxExtendedServicesStatus.NOT_RUNNING
     ) {
       setExpanded(false);
     }
-  }, [prevKieSandboxExtendedServicesStatus, kieSandboxExtendedServices.status, props.workspaceFile.extension]);
+  }, [prevKieSandboxExtendedServicesStatus, extendedServices.status, props.workspaceFile.extension]);
 
   const dmnRunnerDispatch = useMemo(
     () => ({
@@ -216,7 +173,6 @@ export function DmnRunnerProvider(props: PropsWithChildren<Props>) {
       jsonSchema,
       mode,
       didUpdateOutputRows,
-      service,
       status,
     }),
     [
@@ -228,7 +184,6 @@ export function DmnRunnerProvider(props: PropsWithChildren<Props>) {
       isExpanded,
       jsonSchema,
       mode,
-      service,
       status,
     ]
   );

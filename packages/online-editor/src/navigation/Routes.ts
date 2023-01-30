@@ -22,6 +22,8 @@ export enum QueryParams {
   BRANCH = "branch",
   DMN_RUNNER_FORM_INPUTS = "formInputs",
   EXPAND = "expand",
+  AUTH_SESSION_ID = "authSessionId",
+  CONFIRM = "confirm",
 }
 
 export enum PathParams {
@@ -79,7 +81,7 @@ export class Route<
 export interface QueryParamsImpl<Q extends string> {
   has(name: Q): boolean;
   get(name: Q): string | undefined;
-  with(name: Q, value: string): QueryParamsImpl<Q>;
+  with(name: Q, value: string | undefined): QueryParamsImpl<Q>;
   without(name: Q): QueryParamsImpl<Q>;
   toString(): string;
 }
@@ -93,7 +95,11 @@ export function newQueryParamsImpl<Q extends string>(queryString: string): Query
     },
     with: (name, value) => {
       const urlSearchParams = new URLSearchParams(queryString);
-      urlSearchParams.set(name, value);
+      if (value === undefined) {
+        urlSearchParams.delete(name);
+      } else {
+        urlSearchParams.set(name, value);
+      }
       return newQueryParamsImpl(decodeURIComponent(urlSearchParams.toString()));
     },
     without: (name) => {
@@ -115,7 +121,7 @@ export const routes = {
   }>(() => `/`),
 
   /** @deprecated
-   * Use importModel instead */
+   * Use import instead */
   editor: new Route<{
     pathParams: PathParams.EXTENSION;
     queryParams: QueryParams.URL | QueryParams.SETTINGS | QueryParams.DMN_RUNNER_FORM_INPUTS;
@@ -125,8 +131,13 @@ export const routes = {
     pathParams: PathParams.EXTENSION;
   }>(({ extension }) => `/new/${extension}`),
 
-  importModel: new Route<{
-    queryParams: QueryParams.URL | QueryParams.DMN_RUNNER_FORM_INPUTS | QueryParams.BRANCH;
+  import: new Route<{
+    queryParams:
+      | QueryParams.URL
+      | QueryParams.DMN_RUNNER_FORM_INPUTS
+      | QueryParams.BRANCH
+      | QueryParams.AUTH_SESSION_ID
+      | QueryParams.CONFIRM;
   }>(() => `/import`),
 
   workspaceWithFilePath: new Route<{
@@ -141,7 +152,11 @@ export const routes = {
       kogitoLogoWhite: new Route<{}>(() => `images/kogito_logo_white.png`),
       kieHorizontalLogoReverse: new Route<{}>(() => `images/kie_horizontal_rgb_fullcolor_reverse.svg`),
       dmnRunnerGif: new Route<{}>(() => `images/dmn-runner2.gif`),
-      dmnDevSandboxGif: new Route<{}>(() => `images/dmn-dev-sandbox.gif`),
+      dmnDevDeploymentGif: new Route<{}>(() => `images/dmn-dev-deployment.gif`),
+      kubernetesLogo: new Route<{}>(() => `images/kubernetes-logo.svg`),
+      gitlabLogo: new Route<{}>(() => `images/gitlab-logo.svg`),
+      bitbucketLogo: new Route<{}>(() => `images/bitbucket-logo.svg`),
+      openshiftLogo: new Route<{}>(() => `images/openshift-logo.svg`),
     },
   },
 };

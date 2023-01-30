@@ -33,12 +33,14 @@ import {
   InputRow,
   extractDifferences,
 } from "@kie-tools/form-dmn";
-import { Holder, useCancelableEffect, usePrevious } from "../../reactExt/Hooks";
+import { Holder } from "@kie-tools-core/react-hooks/dist/Holder";
+import { useCancelableEffect } from "@kie-tools-core/react-hooks/dist/useCancelableEffect";
+import { usePrevious } from "@kie-tools-core/react-hooks/dist/usePrevious";
 import { ErrorBoundary } from "../../reactExt/ErrorBoundary";
 import { EmptyState, EmptyStateBody, EmptyStateIcon } from "@patternfly/react-core/dist/js/components/EmptyState";
 import { I18nWrapped } from "@kie-tools-core/i18n/dist/react-components";
 import { ExclamationTriangleIcon } from "@patternfly/react-icons/dist/js/icons/exclamation-triangle-icon";
-import { WorkspaceFile } from "../../workspace/WorkspacesContext";
+import { WorkspaceFile } from "@kie-tools-core/workspaces-git-fs/dist/context/WorkspacesContext";
 import { EditorPageDockDrawerRef, PanelId } from "../EditorPageDockDrawer";
 import { Button, ButtonVariant } from "@patternfly/react-core/dist/js/components/Button";
 import { Dropdown, DropdownItem, DropdownToggle } from "@patternfly/react-core/dist/js/components/Dropdown";
@@ -48,6 +50,7 @@ import { Flex, FlexItem } from "@patternfly/react-core/dist/js/layouts/Flex";
 import { CaretDownIcon } from "@patternfly/react-icons/dist/js/icons/caret-down-icon";
 import { ToolbarItem } from "@patternfly/react-core/dist/js/components/Toolbar";
 import { DmnRunnerLoading } from "./DmnRunnerLoading";
+import { useExtendedServices } from "../../kieSandboxExtendedServices/KieSandboxExtendedServicesContext";
 
 const KOGITO_JIRA_LINK = "https://issues.jboss.org/projects/KOGITO";
 
@@ -72,6 +75,7 @@ interface DmnRunnerStylesConfig {
 }
 
 export function DmnRunnerDrawerPanelContent(props: Props) {
+  const extendedServices = useExtendedServices();
   const { i18n, locale } = useOnlineI18n();
   const formRef = useRef<HTMLFormElement>(null);
   const dmnRunnerState = useDmnRunnerState();
@@ -152,7 +156,7 @@ export function DmnRunnerDrawerPanelContent(props: Props) {
 
       try {
         const payload = await dmnRunnerDispatch.preparePayload(formInputs);
-        const result = await dmnRunnerState.service.result(payload);
+        const result = await extendedServices.client.result(payload);
         if (canceled.get()) {
           return;
         }
@@ -180,7 +184,7 @@ export function DmnRunnerDrawerPanelContent(props: Props) {
         setDmnRunnerResults(undefined);
       }
     },
-    [dmnRunnerState.service, dmnRunnerState.status, dmnRunnerDispatch, setExecutionNotifications]
+    [extendedServices.client, dmnRunnerState.status, dmnRunnerDispatch, setExecutionNotifications]
   );
 
   // Update outputs column on form change

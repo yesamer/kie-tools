@@ -17,70 +17,41 @@
 import * as React from "react";
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { getCookie, setCookie } from "../cookies";
-import { Octokit } from "@octokit/rest";
 import { useQueryParams } from "../queryParams/QueryParamsContext";
 import { SettingsModalBody, SettingsTabs } from "./SettingsModalBody";
-import { OpenShiftSettingsConfig, readConfigCookie } from "../openshift/OpenShiftSettingsConfig";
-import { OpenShiftInstanceStatus } from "../openshift/OpenShiftInstanceStatus";
-import { OpenShiftService } from "../openshift/OpenShiftService";
-import { useKieSandboxExtendedServices } from "../kieSandboxExtendedServices/KieSandboxExtendedServicesContext";
 import { useHistory } from "react-router";
 import { Modal, ModalVariant } from "@patternfly/react-core/dist/js/components/Modal";
 import { QueryParams } from "../navigation/Routes";
-import { KieSandboxExtendedServicesStatus } from "../kieSandboxExtendedServices/KieSandboxExtendedServicesStatus";
+import { useExtendedServices } from "../kieSandboxExtendedServices/KieSandboxExtendedServicesContext";
 
 export const KIE_SANDBOX_EXTENDED_SERVICES_HOST_COOKIE_NAME = "kie-tools-COOKIE__kie-sandbox-extended-services--host";
 export const KIE_SANDBOX_EXTENDED_SERVICES_PORT_COOKIE_NAME = "kie-tools-COOKIE__kie-sandbox-extended-services--port";
-const GITHUB_AUTH_TOKEN_COOKIE_NAME = "kie-tools-COOKIE__github-oauth--token";
 const GUIDED_TOUR_ENABLED_COOKIE_NAME = "kie-tools-COOKIE__guided-tour--is-enabled";
-export const OPENSHIFT_NAMESPACE_COOKIE_NAME = "kie-tools-COOKIE__dmn-dev-sandbox--connection-namespace";
-export const OPENSHIFT_HOST_COOKIE_NAME = "kie-tools-COOKIE__dmn-dev-sandbox--connection-host";
-export const OPENSHIFT_TOKEN_COOKIE_NAME = "kie-tools-COOKIE__dmn-dev-sandbox--connection-token";
-
-export enum AuthStatus {
-  SIGNED_OUT,
-  TOKEN_EXPIRED,
-  LOADING,
-  SIGNED_IN,
-}
-
-export enum GithubScopes {
-  GIST = "gist",
-  REPO = "repo",
-}
-
-interface GithubUser {
-  login: string;
-  name: string;
-  email: string;
-}
 
 export class ExtendedServicesConfig {
   constructor(public readonly host: string, public readonly port: string) {}
 
-  public buildUrl(): string {
+  private buildUrl(): string {
     if (this.port.trim().length === 0) {
       return this.host;
     }
     return `${this.host}:${this.port}`;
+  }
+
+  public get url() {
+    return {
+      jitExecutor: `${this.buildUrl()}/`,
+      ping: `${this.buildUrl()}/ping`,
+      corsProxy: `${this.buildUrl()}/cors-proxy`,
+    };
   }
 }
 
 export interface SettingsContextType {
   isOpen: boolean;
   activeTab: SettingsTabs;
-  openshift: {
-    status: OpenShiftInstanceStatus;
-    config: OpenShiftSettingsConfig;
-  };
   kieSandboxExtendedServices: {
     config: ExtendedServicesConfig;
-  };
-  github: {
-    token?: string;
-    user?: GithubUser;
-    scopes?: string[];
-    authStatus: AuthStatus;
   };
   general: {
     guidedTour: {
@@ -92,17 +63,8 @@ export interface SettingsContextType {
 export interface SettingsDispatchContextType {
   open: (activeTab?: SettingsTabs) => void;
   close: () => void;
-  openshift: {
-    service: OpenShiftService;
-    setStatus: React.Dispatch<React.SetStateAction<OpenShiftInstanceStatus>>;
-    setConfig: React.Dispatch<React.SetStateAction<OpenShiftSettingsConfig>>;
-  };
   kieSandboxExtendedServices: {
     setConfig: React.Dispatch<React.SetStateAction<ExtendedServicesConfig>>;
-  };
-  github: {
-    authService: { reset: () => void; authenticate: (token: string) => Promise<void> };
-    octokit: Octokit;
   };
   general: {
     guidedTour: {
@@ -118,15 +80,15 @@ export function SettingsContextProvider(props: any) {
   const queryParams = useQueryParams();
   const history = useHistory();
   const [isOpen, setOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState(SettingsTabs.GITHUB);
+  const [activeTab, setActiveTab] = useState(SettingsTabs.KIE_SANDBOX_EXTENDED_SERVICES);
 
   useEffect(() => {
     setOpen(queryParams.has(QueryParams.SETTINGS));
-    setActiveTab((queryParams.get(QueryParams.SETTINGS) as SettingsTabs) ?? SettingsTabs.GITHUB);
+    setActiveTab((queryParams.get(QueryParams.SETTINGS) as SettingsTabs) ?? SettingsTabs.KIE_SANDBOX_EXTENDED_SERVICES);
   }, [queryParams]);
 
   const open = useCallback(
-    (activeTab = SettingsTabs.GITHUB) => {
+    (activeTab = SettingsTabs.KIE_SANDBOX_EXTENDED_SERVICES) => {
       history.replace({
         search: queryParams.with(QueryParams.SETTINGS, activeTab).toString(),
       });
@@ -140,64 +102,6 @@ export function SettingsContextProvider(props: any) {
     });
   }, [history, queryParams]);
 
-  //github
-  const [githubAuthStatus, setGitHubAuthStatus] = useState(AuthStatus.LOADING);
-  const [githubOctokit, setGitHubOctokit] = useState<Octokit>(new Octokit());
-  const [githubToken, setGitHubToken] = useState<string | undefined>(undefined);
-  const [githubUser, setGitHubUser] = useState<GithubUser | undefined>(undefined);
-  const [githubScopes, setGitHubScopes] = useState<string[] | undefined>(undefined);
-
-  const githubAuthService = useMemo(() => {
-    return {
-      reset: () => {
-        setGitHubOctokit(new Octokit());
-        setGitHubToken(undefined);
-        setGitHubUser(undefined);
-        setGitHubScopes(undefined);
-        setCookie(GITHUB_AUTH_TOKEN_COOKIE_NAME, "");
-        setGitHubAuthStatus(AuthStatus.SIGNED_OUT);
-      },
-      authenticate: async (token: string) => {
-        try {
-          setGitHubAuthStatus(AuthStatus.LOADING);
-          const octokit = new Octokit({ auth: token });
-          const response = await octokit.users.getAuthenticated();
-          await delay(1000);
-          const scopes = response.headers["x-oauth-scopes"]?.split(", ") ?? [];
-          if (!scopes.includes("repo")) {
-            throw new Error("Token doesn't have 'repo' scope.");
-          }
-
-          setGitHubOctokit(octokit);
-          setGitHubToken(token);
-          setGitHubUser({
-            login: response.data.login,
-            name: response.data.name ?? "",
-            email: response.data.email ?? "",
-          });
-          setGitHubScopes(scopes);
-          setCookie(GITHUB_AUTH_TOKEN_COOKIE_NAME, token);
-          setGitHubAuthStatus(AuthStatus.SIGNED_IN);
-        } catch (e) {
-          setGitHubAuthStatus(AuthStatus.SIGNED_OUT);
-          throw e;
-        }
-      },
-    };
-  }, []);
-
-  useEffect(() => {
-    const tokenCookie = getCookie(GITHUB_AUTH_TOKEN_COOKIE_NAME);
-    if (!tokenCookie) {
-      setGitHubAuthStatus(AuthStatus.SIGNED_OUT);
-      return;
-    }
-
-    githubAuthService.authenticate(tokenCookie).catch(() => {
-      setGitHubAuthStatus(AuthStatus.TOKEN_EXPIRED);
-    });
-  }, [githubAuthService]);
-
   //guided tour
   const [isGuidedTourEnabled, setGuidedTourEnabled] = useState(
     getBooleanCookieInitialValue(GUIDED_TOUR_ENABLED_COOKIE_NAME, true)
@@ -207,35 +111,14 @@ export function SettingsContextProvider(props: any) {
     setCookie(GUIDED_TOUR_ENABLED_COOKIE_NAME, `${isGuidedTourEnabled}`);
   }, [isGuidedTourEnabled]);
 
-  //openshift
-  const kieSandboxExtendedServices = useKieSandboxExtendedServices();
-  const [openshiftConfig, setOpenShiftConfig] = useState(readConfigCookie());
-  const [openshiftStatus, setOpenshiftStatus] = useState(
-    kieSandboxExtendedServices.status === KieSandboxExtendedServicesStatus.AVAILABLE
-      ? OpenShiftInstanceStatus.DISCONNECTED
-      : OpenShiftInstanceStatus.UNAVAILABLE
-  );
-
-  const openshiftService = useMemo(
-    () => new OpenShiftService(`${kieSandboxExtendedServices.config.buildUrl()}/devsandbox`),
-    [kieSandboxExtendedServices.config]
-  );
+  const extendedServices = useExtendedServices();
 
   const dispatch = useMemo(() => {
     return {
       open,
       close,
-      openshift: {
-        service: openshiftService,
-        setStatus: setOpenshiftStatus,
-        setConfig: setOpenShiftConfig,
-      },
-      github: {
-        authService: githubAuthService,
-        octokit: githubOctokit,
-      },
       kieSandboxExtendedServices: {
-        setConfig: kieSandboxExtendedServices.saveNewConfig,
+        setConfig: extendedServices.saveNewConfig,
       },
       general: {
         guidedTour: {
@@ -243,24 +126,14 @@ export function SettingsContextProvider(props: any) {
         },
       },
     };
-  }, [close, githubAuthService, githubOctokit, kieSandboxExtendedServices.saveNewConfig, open, openshiftService]);
+  }, [close, extendedServices.saveNewConfig, open]);
 
   const value = useMemo(() => {
     return {
       isOpen,
       activeTab,
-      openshift: {
-        status: openshiftStatus,
-        config: openshiftConfig,
-      },
-      github: {
-        authStatus: githubAuthStatus,
-        token: githubToken,
-        user: githubUser,
-        scopes: githubScopes,
-      },
       kieSandboxExtendedServices: {
-        config: kieSandboxExtendedServices.config,
+        config: extendedServices.config,
       },
       general: {
         guidedTour: {
@@ -268,23 +141,12 @@ export function SettingsContextProvider(props: any) {
         },
       },
     };
-  }, [
-    activeTab,
-    githubAuthStatus,
-    githubScopes,
-    githubToken,
-    githubUser,
-    isGuidedTourEnabled,
-    isOpen,
-    kieSandboxExtendedServices.config,
-    openshiftConfig,
-    openshiftStatus,
-  ]);
+  }, [activeTab, isGuidedTourEnabled, isOpen, extendedServices.config]);
 
   return (
     <SettingsContext.Provider value={value}>
       <SettingsDispatchContext.Provider value={dispatch}>
-        {githubAuthStatus !== AuthStatus.LOADING && <>{props.children}</>}
+        {<>{props.children}</>}
         <Modal title="Settings" isOpen={isOpen} onClose={close} variant={ModalVariant.large}>
           <div style={{ height: "calc(100vh * 0.5)" }} className={"kie-tools--setings-modal-content"}>
             <SettingsModalBody />
@@ -305,12 +167,4 @@ export function useSettingsDispatch() {
 
 function getBooleanCookieInitialValue<T>(name: string, defaultValue: boolean) {
   return !getCookie(name) ? defaultValue : getCookie(name) === "true";
-}
-
-function delay(ms: number) {
-  return new Promise<void>((res) => {
-    setTimeout(() => {
-      res();
-    }, ms);
-  });
 }

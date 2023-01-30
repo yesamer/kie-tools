@@ -31,7 +31,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <tycho.version>2.5.0</tycho.version>
+    <tycho.version>2.7.5</tycho.version>
     <tycho.extras.version>${tycho.version}</tycho.extras.version>
     <tycho.scmUrl>scm:git:https://github.com/kiegroup/kie-tools.git</tycho.scmUrl>
     <tycho.generateSourceReferences>true</tycho.generateSourceReferences>
@@ -40,7 +40,7 @@
     <tycho.test.jvmArgs>-Xmx512m ${tycho.test.platformArgs}</tycho.test.jvmArgs>
 
     <!-- Code coverage -->
-    <jacoco.version>0.7.9</jacoco.version>
+    <jacoco.version>0.8.5</jacoco.version>
     <coverage.filter>org.eclipse.jdt.ls.*</coverage.filter>
     <sonar.dynamicAnalysis>reuseReports</sonar.dynamicAnalysis>
     <jacoco.destFile>${project.build.directory}/jacoco.exec</jacoco.destFile>
@@ -49,6 +49,7 @@
     <maven.compiler.target>11</maven.compiler.target>
     <maven.compiler.source>11</maven.compiler.source>
 
+    <version.flatten.plugin>1.3.0</version.flatten.plugin>
   </properties>
   <repositories>
     <repository>
@@ -97,7 +98,7 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>flatten-maven-plugin</artifactId>
-        <version>1.3.0</version>
+        <version>${version.flatten.plugin}</version>
         <configuration>
           <updatePomFile>true</updatePomFile>
           <flattenMode>resolveCiFriendliesOnly</flattenMode>

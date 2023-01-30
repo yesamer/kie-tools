@@ -17,11 +17,12 @@
 import * as React from "react";
 import { useContext } from "react";
 import { ExtendedServicesConfig } from "../settings/SettingsContext";
+import { KieSandboxExtendedServicesClient } from "./KieSandboxExtendedServicesClient";
 import { KieSandboxExtendedServicesStatus } from "./KieSandboxExtendedServicesStatus";
 
 export enum DependentFeature {
   DMN_RUNNER = "DMN_RUNNER",
-  DMN_DEV_SANDBOX = "DMN_DEV_SANDBOX",
+  DEV_DEPLOYMENTS = "DMN_DEV_SANDBOX",
 }
 
 export interface KieSandboxExtendedServicesContextType {
@@ -29,6 +30,7 @@ export interface KieSandboxExtendedServicesContextType {
   setStatus: React.Dispatch<KieSandboxExtendedServicesStatus>;
   config: ExtendedServicesConfig;
   saveNewConfig: React.Dispatch<ExtendedServicesConfig>;
+  client: KieSandboxExtendedServicesClient;
   version: string;
   outdated: boolean;
   isModalOpen: boolean;
@@ -39,6 +41,6 @@ export interface KieSandboxExtendedServicesContextType {
 
 export const KieSandboxExtendedServicesContext = React.createContext<KieSandboxExtendedServicesContextType>({} as any);
 
-export function useKieSandboxExtendedServices() {
+export function useExtendedServices() {
   return useContext(KieSandboxExtendedServicesContext);
 }

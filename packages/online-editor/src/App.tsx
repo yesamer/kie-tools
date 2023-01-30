@@ -18,25 +18,25 @@ import * as React from "react";
 import { useMemo } from "react";
 import { Redirect, Route, Switch } from "react-router";
 import { HashRouter } from "react-router-dom";
-import {
-  EditorEnvelopeLocatorContextProvider,
-  useEditorEnvelopeLocator,
-} from "./envelopeLocator/hooks/EditorEnvelopeLocatorContext";
+import { EditorEnvelopeLocatorContextProvider } from "./envelopeLocator/hooks/EditorEnvelopeLocatorContext";
 import { EditorPage } from "./editor/EditorPage";
 import { OnlineI18nContextProvider } from "./i18n";
 import { NoMatchPage } from "./NoMatchPage";
 import { KieSandboxExtendedServicesContextProvider } from "./kieSandboxExtendedServices/KieSandboxExtendedServicesContextProvider";
 import { SettingsContextProvider } from "./settings/SettingsContext";
 import { HomePage } from "./home/HomePage";
-import { NewWorkspaceWithEmptyFilePage } from "./workspace/components/NewWorkspaceWithEmptyFilePage";
-import { NewWorkspaceFromUrlPage } from "./workspace/components/NewWorkspaceFromUrlPage";
-import { DmnDevSandboxContextProvider } from "./editor/DmnDevSandbox/DmnDevSandboxContextProvider";
+import { NewWorkspaceWithEmptyFilePage } from "./importFromUrl/NewWorkspaceWithEmptyFilePage";
+import { NewWorkspaceFromUrlPage } from "./importFromUrl/NewWorkspaceFromUrlPage";
+import { DevDeploymentsContextProvider } from "./devDeployments/DevDeploymentsContextProvider";
 import { NavigationContextProvider } from "./navigation/NavigationContextProvider";
 import { useRoutes } from "./navigation/Hooks";
-import { WorkspacesContextProvider } from "./workspace/WorkspacesContextProvider";
 import { EnvContextProvider } from "./env/hooks/EnvContextProvider";
 import { DmnRunnerInputsDispatchContextProvider } from "./dmnRunnerInputs/DmnRunnerInputsDispatchContextProvider";
 import { PreviewSvgsContextProvider } from "./previewSvgs/PreviewSvgsContext";
+import { AuthSessionsContextProvider } from "./authSessions/AuthSessionsContext";
+import { AccountsContextProvider } from "./accounts/AccountsContext";
+import { GlobalAlertsContextProvider } from "./alerts";
+import { WorkspacesContextProviderWithCustomCommitMessagesModal } from "./workspace/components/WorkspacesContextProviderWithCustomCommitMessagesModal";
 
 export function App() {
   return (
@@ -47,9 +47,12 @@ export function App() {
         [EnvContextProvider, {}],
         [KieSandboxExtendedServicesContextProvider, {}],
         [SettingsContextProvider, {}],
-        [WorkspacesContextProvider, {}],
+        [AuthSessionsContextProvider, {}],
+        [AccountsContextProvider, {}],
+        [GlobalAlertsContextProvider, []],
+        [WorkspacesContextProviderWithCustomCommitMessagesModal, {}],
         [DmnRunnerInputsDispatchContextProvider, {}],
-        [DmnDevSandboxContextProvider, {}],
+        [DevDeploymentsContextProvider, {}],
         [NavigationContextProvider, {}],
         [PreviewSvgsContextProvider, {}],
         [RoutesSwitch, {}]
@@ -60,9 +63,7 @@ export function App() {
 
 function RoutesSwitch() {
   const routes = useRoutes();
-  const editorEnvelopeLocator = useEditorEnvelopeLocator();
-
-  const supportedExtensions = useMemo(() => "bpmn|bpmn2|dmn|pmml", [editorEnvelopeLocator]);
+  const supportedExtensions = useMemo(() => "bpmn|bpmn2|dmn|pmml", []);
 
   return (
     <Switch>
@@ -72,7 +73,7 @@ function RoutesSwitch() {
       <Route path={routes.newModel.path({ extension: `:extension(${supportedExtensions})` })}>
         {({ match }) => <NewWorkspaceWithEmptyFilePage extension={match!.params.extension!} />}
       </Route>
-      <Route path={routes.importModel.path({})}>
+      <Route path={routes.import.path({})}>
         <NewWorkspaceFromUrlPage />
       </Route>
       <Route

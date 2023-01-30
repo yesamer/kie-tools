@@ -18,7 +18,7 @@ import { EditorTheme } from "@kie-tools-core/editor/dist/api";
 import { OperatingSystem } from "@kie-tools-core/operating-system";
 import { FileLanguage, SwfLanguageServiceCommandIds } from "@kie-tools/serverless-workflow-language-service/dist/api";
 import { SwfJsonOffsets, SwfYamlOffsets } from "@kie-tools/serverless-workflow-language-service/dist/editor";
-import { editor, KeyCode, KeyMod } from "monaco-editor";
+import { editor, KeyCode, KeyMod, Position } from "monaco-editor";
 import { initJsonSchemaDiagnostics } from "./augmentation/language/json";
 import { initYamlSchemaDiagnostics } from "./augmentation/language/yaml";
 
@@ -35,6 +35,7 @@ export interface SwfTextEditorApi {
   forceRedraw: () => void;
   dispose: () => void;
   moveCursorToNode: (nodeName: string) => void;
+  moveCursorToPosition: (position: Position) => void;
 }
 
 export enum SwfTextEditorOperation {
@@ -77,7 +78,7 @@ export class SwfTextEditorController implements SwfTextEditorApi {
     });
 
     editor.onDidCreateEditor((codeEditor) => {
-      codeEditor.onDidChangeCursorPosition((event) => this.handleDidChangeCursorPosition(event));
+      codeEditor.onDidChangeCursorSelection((event) => this.handleDidChangeCursorSelection(event));
     });
   }
 
@@ -172,18 +173,35 @@ export class SwfTextEditorController implements SwfTextEditorApi {
       return;
     }
 
-    this.editor?.revealLineInCenter(targetPosition.lineNumber);
-    this.editor?.setPosition(targetPosition);
-    this.editor?.focus();
+    this.moveCursorToPosition(targetPosition);
   }
 
-  public handleDidChangeCursorPosition(event: editor.ICursorPositionChangedEvent): void {
-    const position = event.position;
-    if (!position || event.reason !== editor.CursorChangeReason.Explicit) {
+  /**
+   * Moves the cursor to a specified position
+   *
+   * @param position -
+   * @returns
+   */
+  public moveCursorToPosition(position: Position): void {
+    if (!this.editor) {
       return;
     }
 
-    const offset = this.editor?.getModel()?.getOffsetAt(position);
+    this.editor?.revealLineInCenter(position.lineNumber);
+    this.editor?.setPosition(position);
+    this.editor?.focus();
+  }
+
+  public handleDidChangeCursorSelection(event: editor.ICursorSelectionChangedEvent): void {
+    const selection = event.selection;
+    if (
+      event.reason !== editor.CursorChangeReason.Explicit ||
+      !Position.equals(selection.getStartPosition(), selection.getEndPosition())
+    ) {
+      return;
+    }
+
+    const offset = this.editor?.getModel()?.getOffsetAt(selection.getStartPosition());
     if (!offset) {
       return;
     }

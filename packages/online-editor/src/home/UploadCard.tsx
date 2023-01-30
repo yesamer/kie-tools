@@ -17,7 +17,7 @@
 import * as React from "react";
 import { useCallback, useRef, useState } from "react";
 import { isAbsolute } from "path";
-import { useWorkspaces } from "../workspace/WorkspacesContext";
+import { useWorkspaces } from "@kie-tools-core/workspaces-git-fs/dist/context/WorkspacesContext";
 import { useDropzone } from "react-dropzone";
 import { Bullseye } from "@patternfly/react-core/dist/js/layouts/Bullseye";
 import { Card, CardBody, CardFooter, CardTitle } from "@patternfly/react-core/dist/js/components/Card";
@@ -29,7 +29,8 @@ import { Spinner } from "@patternfly/react-core/dist/js/components/Spinner";
 import { UploadIcon } from "@patternfly/react-icons/dist/js/icons/upload-icon";
 import { Divider } from "@patternfly/react-core/dist/js/components/Divider";
 import { Split, SplitItem } from "@patternfly/react-core/dist/js/layouts/Split";
-import { LocalFile } from "../workspace/worker/api/LocalFile";
+import { LocalFile } from "@kie-tools-core/workspaces-git-fs/dist/worker/api/LocalFile";
+import { AUTH_SESSION_NONE } from "../authSessions/AuthSessionApi";
 
 enum UploadType {
   NONE,
@@ -113,6 +114,7 @@ export function UploadCard(props: { expandWorkspace: (workspaceId: string) => vo
         const { workspace, suggestedFirstFile } = await workspaces.createWorkspaceFromLocal({
           localFiles,
           preferredName,
+          gitAuthSessionId: AUTH_SESSION_NONE.id,
         });
 
         if (!suggestedFirstFile) {
@@ -127,7 +129,7 @@ export function UploadCard(props: { expandWorkspace: (workspaceId: string) => vo
           }),
         });
       } finally {
-        // setUploading(UploadType.NONE);
+        setUploading(UploadType.NONE);
       }
     },
     [props, workspaces, history, routes]

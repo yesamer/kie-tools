@@ -19,6 +19,8 @@ package org.kie.workbench.common.stunner.sw.client.editor;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import javax.enterprise.event.Event;
+
 import com.ait.lienzo.client.core.shape.Viewport;
 import com.ait.lienzo.client.core.types.JsCanvas;
 import com.ait.lienzo.client.core.types.Transform;
@@ -143,6 +145,9 @@ public class DiagramEditorTest {
     @Mock
     private CanvasCommandManager commandManager;
 
+    @Mock
+    private Event togglePreviewEvent;
+
     private DiagramEditor tested;
     private Promises promises;
     private DiagramImpl diagram;
@@ -215,7 +220,8 @@ public class DiagramEditorTest {
                                        stunnerEditor2,
                                        diagramServices,
                                        incrementalMarshaller,
-                                       canvasFileExport));
+                                       canvasFileExport,
+                                       togglePreviewEvent));
         tested.jsRegExp = jsRegExp;
         tested.jsCanvas = jsCanvas;
     }
@@ -234,6 +240,24 @@ public class DiagramEditorTest {
         lienzoPanel.getPostResizeCallback().execute(lienzoPanel);
         // New transform is created
         assertNotEquals(transform, viewport.getTransform());
+        verify(lienzoPanel, times(1)).setPostResizeCallback(null);
+    }
+
+    @Test
+    public void testScaleToFitWorkflowFits() {
+        when(lienzoPanel.getWidePx()).thenReturn(500);
+        when(lienzoPanel.getHighPx()).thenReturn(500);
+        // No need to scale if workflow fits
+        when(lienzoPanel.getLayerBounds()).thenReturn(Bounds.build(0d, 0d, 400d, 400d));
+
+        DiagramEditor.scaleToFitWorkflow(stunnerEditor);
+
+        verify(lienzoPanel, times(1)).setPostResizeCallback(any(PostResizeCallback.class));
+        assertNotNull(lienzoPanel.getPostResizeCallback());
+        // Run callback
+        lienzoPanel.getPostResizeCallback().execute(lienzoPanel);
+        // Keep the transform
+        assertEquals(transform, viewport.getTransform());
         verify(lienzoPanel, times(1)).setPostResizeCallback(null);
     }
 

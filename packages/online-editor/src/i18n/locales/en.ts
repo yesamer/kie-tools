@@ -18,6 +18,7 @@ import { OnlineI18n } from "..";
 import { en as en_common } from "@kie-tools/i18n-common-dictionary";
 import { en as en_unitables } from "@kie-tools/unitables/dist/i18n/locales/en";
 import { wrapped } from "@kie-tools-core/i18n/dist/core";
+import { names } from "@kie-tools/i18n-common-dictionary/dist/names";
 
 export const en: OnlineI18n = {
   ...en_common,
@@ -33,14 +34,17 @@ export const en: OnlineI18n = {
       copy: "Content copied to clipboard",
       updateGist: "Gist successfully updated.",
       createGist: "Gist successfully created.",
-      errorPushingGist: "Failed to push an update to your current Gist. Attempt to force push?",
+      errorPushingGist: "Failed to Push an update to your current Gist. Attempt to Push forcefully?",
+      updateSnippet: "Snippet successfully updated.",
+      createSnippet: "Snippet successfully created.",
+      errorPushingSnippet: "Failed to Push an update to your current Snippet. Attempt to Push forcefully?",
       forcePushWarning: "WARNING: This will overwrite your Gist with the local changes!",
       invalidCurrentGist: `Your current gist ${en_common.names.url} is invalid. If you've updated its filename, it's necessary to update your ${en_common.names.url} as well.`,
       invalidGistFilename: "Invalid filename. This gist already has a file with this name.",
-      error: `An error occurred trying to perform the last operation. Check if your ${en_common.names.github} token is still valid and try again later.`,
+      error: `An error occurred trying to perform the last operation. Check if your authentication token is still valid and try again later.`,
       unsaved: {
         titleLocal: "You have new changes since your last download.",
-        titleGit: "You have new changes since your last push.",
+        titleGit: "You have new changes since your last Push.",
         proceedAnyway: "Proceed anyway",
         message: "Your files are temporarily persisted on your browser, but may be erased before you come back.",
       },
@@ -56,24 +60,30 @@ export const en: OnlineI18n = {
     createGist: "Create Gist",
     cantCreateGistTooltip: `You can't create a Gist because you're either not logged in, or your models are in nested directories.`,
     cantUpdateGistTooltip: `You can't update your Gist because you're either not logged in, not the owner, or your models are in nested directories.`,
+    createSnippet: "Create Snippet",
+    cantCreateSnippetTooltip: `You can't create a Snippet because you're either not logged in, or your models are in nested directories.`,
+    cantUpdateSnippetTooltip: `You can't update your Snippet because you're either not logged in, not the owner, or your models are in nested directories.`,
     share: "Share",
     embed: "Embed",
   },
-  dmnDevSandbox: {
+  devDeployments: {
     common: {
       deployYourModel: "Deploy",
       deployInstanceInfo: "Deploy instance information",
       disclaimer:
-        "When you set up the required information, you are able to deploy decision models on your configured instance. All the information you provide is locally stored as browser cookies and they are never shared with anyone.",
+        "When you set up the required information, you are able to create Dev deployments on your configured instance. All the information you provide is locally stored in the browser and is never shared with anyone.",
       learnMore: "Learn more",
       requiredField: "This field cannot be empty.",
       deploying: "Deploying ...",
+      deleting: "Deleting ...",
       saving: "Saving ...",
-      setupFirst: `Set up your ${en_common.names.dmnDevSandbox} to be able to deploy your models`,
+      setupFirst: `Set up your ${en_common.names.devDeployments} to be able to deploy your models`,
     },
     dropdown: {
       noDeployments: "Your deployments show up here",
       connectedTo: (username: string) => `Connected to  '${username}'`,
+      connectedToAction: "Change...",
+      deleteDeployments: "Delete all",
       item: {
         upTooltip: "This deployment is up and running.",
         downTooltip: "This deployment is not running.",
@@ -85,27 +95,32 @@ export const en: OnlineI18n = {
     },
     configModal: {
       hostInfo: `The hostname associated with your instance.`,
-      namespaceInfo: `The namespace (project) you want to deploy the Decision Model.`,
+      namespaceInfo: `The Namespace (project) you want your Dev deployments to be.`,
       tokenInfo: `The token associated with your instance.`,
       validationError: "You must fill out all required fields before you can proceed.",
       connectionError: "Connection refused. Please check the information provided.",
       configExpiredWarning: "Token or account expired. Please update your configuration.",
-      useWizard: "Configure through the guided wizard instead",
+      useWizard: "Configure a new Developer Sandbox for Red Hat OpenShift through the guided wizard",
     },
-    confirmModal: {
+    deployConfirmModal: {
       title: "Deploy",
-      body: "Are you sure you want to deploy your model to your instance? This action will take a few minutes to be completed and you will need to create a new deployment if you update your model.",
+      body: "This action can take a few minutes to be completed and you will need to create a new deployment if you update your model, as Dev deployments are immutable.",
+    },
+    deleteConfirmModal: {
+      title: "Delete Dev deployment(s)",
+      body: "Are you sure you want to delete your Dev deployment(s)?",
     },
     alerts: {
       deployStartedError:
-        "Something went wrong when creating your deployment. Please check your configuration and try again.",
-      deployStartedSuccess:
-        "Your deployment has been successfully started and will be available shortly. Please do not close your browser tab until this operation is completed.",
+        "Something went wrong when creating your Dev deployment. Please check your configuration and try again.",
+      deployStartedSuccess: "Your Dev deployment has been successfully started and will be available shortly.",
+      deleteError: "Failed to delete Dev deployment(s). Please try again via OpenShift Console or CLI.",
+      deleteSuccess: "Dev deployment(s) successfully deleted.",
     },
     introduction: {
-      explanation: `Deploy your decision models to a cloud instance on ${en_common.names.devSandbox} and share with others.`,
+      explanation: `Create Dev deployments in the cloud and share with others.`,
       disclaimer: `${
-        en_common.names.dmnDevSandbox
+        en_common.names.devDeployments
       } is intended for ${"development".bold()} and should not be used for business-critical workloads.`,
       getStarted: "To get started, configure your instance information.",
     },
@@ -119,10 +134,10 @@ export const en: OnlineI18n = {
           introduction: `In order to create your ${en_common.names.shortDevSandbox} instance:`,
           goToGetStartedPage: "Go to the Get Started page",
           followSteps: `Follow the steps to launch your instance. You will be asked to log in with your ${en_common.names.redHat} account.`,
-          informNamespace: `Once your instance is up and running, inform the namespace (project) in your cluster you want to have the Decision Model deployed to.`,
+          informNamespace: `Once your instance is up and running, inform the Namespace (project) where you want your Dev deployments created.`,
           inputReason:
-            "This information is necessary for deploying your Decision Model into the right project namespace.",
-          namespacePlaceholder: `The namespace (project) you want to deploy the Decision Model.`,
+            "This information is necessary for creating your Dev deployments in the right Namespace (project).",
+          namespacePlaceholder: `The Namespace (project) where you want to create your Dev deployments.`,
         },
         second: {
           name: "Set credentials",
@@ -138,8 +153,8 @@ export const en: OnlineI18n = {
           name: "Connect",
           connectionSuccess: "Connection successfully established.",
           connectionError: "Connection refused.",
-          introduction: "Now you are able to deploy DMN decisions to your OpenShift instance.",
-          configNote: "Your configuration will be stored as browser cookies after the operations above.",
+          introduction: "Now you are able to create Dev deployments on this OpenShift instance.",
+          configNote: "The token you provide is locally stored in this browser and is never shared with anyone.",
           connectionErrorLong: `A connection with your ${en_common.names.shortDevSandbox} instance could not be established.`,
           checkInfo: "Please check the information provided and try again.",
           possibleErrorReasons: {
@@ -173,20 +188,83 @@ export const en: OnlineI18n = {
     embedCode: "Embed code",
     copiedToClipboard: "Copied to clipboard",
   },
-  githubTokenModal: {
-    header: {
-      title: `${en_common.names.github} ${en_common.names.oauth} ${en_common.terms.token}`,
-      subtitle: `Set up your ${en_common.names.github} token so you can create and update gist.`,
+  connectToGitModal: {
+    github: {
+      header: {
+        title: `${en_common.names.github} ${en_common.names.oauth} ${en_common.terms.token}`,
+        subtitle: `Set up your ${en_common.names.github} token so you can interact with GitHub.`,
+      },
+      footer: {
+        createNewToken: "Generate new token",
+        placeHolder: "Paste your token here",
+      },
+      body: {
+        learnMore: `Learn more about ${en_common.names.github} tokens`,
+        note: `You should provide a token with the ${"'gist'".bold()} permission.`,
+      },
+      validation: {
+        scopes: {
+          helper: "Your token must include the 'repo' and 'gist' scopes.",
+        },
+      },
+      form: {
+        token: {
+          label: "Personal Access Token (classic)",
+          placeHolder: "Paste your GitHub token here",
+        },
+      },
     },
-    footer: {
-      createNewToken: "Create a new token",
-      placeHolder: "Paste your token here",
+    bitbucket: {
+      header: {
+        title: `${en_common.names.bitbucket} ${en_common.names.oauth} ${en_common.terms.token}`,
+        subtitle: `Set up your ${en_common.names.bitbucket} App Password so you can interact with Bitbucket.`,
+      },
+      footer: {
+        createNewToken: "Generate new App Passord",
+        placeHolder: "Paste your App Password here",
+      },
+      body: {
+        learnMore: `Learn more about ${en_common.names.bitbucket} App Passwords`,
+        note: `You should provide a token with the ${"'snippet'".bold()} permission.`,
+      },
+      validation: {
+        scopes: {
+          helper: "Your token must include the 'account', 'repository' and 'snippet' scopes.",
+        },
+      },
+      form: {
+        username: {
+          label: "Bitbucket username",
+          placeHolder: "Paste your Bitbucket username here",
+        },
+        token: {
+          label: "Bitbucket App Password",
+          placeHolder: "Paste your Bitbucket App Password here",
+        },
+      },
     },
-    body: {
-      disclaimer: `The token you provide is locally stored as a browser cookie and is never shared with anyone.`,
-      learnMore: `Learn more about ${en_common.names.github} tokens`,
-      note: `You should provide a token with the ${"'gist'".bold()} permission.`,
+    auth: {
+      disclaimer: `The token you provide is locally stored in this browser and is never shared with anyone.`,
+      error: {
+        alreadyLoggedIn: "You're already logged in with this Token.",
+        oauthScopes: (requiredScopes: string) =>
+          `Make sure your Token includes the necessary OAuth2 scopes: ${requiredScopes}`,
+      },
     },
+    navigation: {
+      continue: "Continue",
+      seeConnectedAccounts: "See connected accounts",
+    },
+    status: {
+      loading: "Loading...",
+    },
+  },
+  commitModal: {
+    title: "Input custom commit message",
+    description: "Write a brief summary of the changes made to the workspace, ideally up to 72 characters.",
+    commit: "Commit",
+    inputHelper: "Commit message cannot be empty",
+    placeholder: "Commit message",
   },
   homePage: {
     uploadFile: {
@@ -289,7 +367,7 @@ export const en: OnlineI18n = {
         explanation:
           "Input nodes become interactive fields on an auto-generated form, and the results are displayed as easy-to-read cards.",
         notificationPanelExplanation: [
-          `The Notifications Panel `,
+          `The Problems panel `,
           wrapped("icon"),
           `, at the bottom-right corner of the Editor, displays live Execution messages to assist modeling your decisions.`,
         ],
@@ -414,10 +492,10 @@ export const en: OnlineI18n = {
         title: "All set! 🎉",
         connected: `You're connected to the ${en_common.names.kieSandboxExtendedServices}.`,
         fillTheForm: "Fill the Form on the Inputs column and automatically see the results on the Outputs column.",
-        deployTheModel: `You can also deploy your model to the ${en_common.names.dmnDevSandbox} when you're done editing.`,
+        deployTheModel: `You can also deploy your model to the ${en_common.names.devDeployments} when you're done editing.`,
         backToEditor: "Back to Editor",
-        setupDmnDevSandbox: `Set up the ${en_common.names.dmnDevSandbox}`,
-        dmnDevSandboxAlreadySetup: `${en_common.names.dmnDevSandbox} already set up`,
+        setupDevDeployments: `Set up the ${en_common.names.devDeployments}`,
+        devDeploymentsAlreadySetup: `${en_common.names.devDeployments} already set up`,
       },
     },
     dropdown: {
@@ -431,7 +509,7 @@ export const en: OnlineI18n = {
     },
   },
   notificationsPanel: {
-    name: "Notifications Panel",
+    name: "Problems panel",
     tooltip: {
       retractAll: "Retract All",
       expandAll: "Expand All",
@@ -451,6 +529,110 @@ export const en: OnlineI18n = {
       initial: {
         subHeader: `Augment the ${en_common.names.dmn} editor`,
       },
+    },
+  },
+  createGitRepositoryModal: {
+    form: {
+      buttonCreate: "Create",
+      nameField: {
+        label: "Name",
+        hint: "Invalid name. Only letters, numbers, dashes (-), dots (.), and underscores (_) are allowed.",
+      },
+      visibility: {
+        public: {
+          label: "Public",
+          description: "Anyone on the internet can see this repository. You choose who can commit.",
+        },
+        private: {
+          label: "Private",
+          description: "You choose who can see and commit to this repository.",
+        },
+      },
+    },
+    bitbucket: {
+      repository: `${en_common.names.bitbucket} repository`,
+      createRepository: `Create ${en_common.names.bitbucket} repository`,
+      description: (workspace: string) =>
+        `The contents of '${workspace}' will be all in the new ${en_common.names.bitbucket} repository.`,
+      error: {
+        formAlert: (error: string) => `Error creating ${en_common.names.bitbucket} repository. ${error}`,
+      },
+      form: {
+        select: {
+          label: "Pick a workspace under which the new repository will be created.",
+          description: "Pick either a personal or shared workspace.",
+        },
+      },
+    },
+    github: {
+      repository: `${en_common.names.github} repository`,
+      createRepository: `Create ${en_common.names.github} repository`,
+      description: (workspace: string) =>
+        `The contents of '${workspace}' will be all in the new ${en_common.names.github} repository.`,
+      error: {
+        formAlert: (error: string) => `Error creating ${en_common.names.github} repository. ${error}`,
+      },
+      form: {
+        select: {
+          label: "The new repository will be created under the following scope",
+          description: "Pick either your user account or a GitHub organization.",
+        },
+      },
+    },
+  },
+  createGistOrSnippetModal: {
+    form: {
+      buttonCreate: "Create",
+      visibility: {
+        public: {
+          label: "Public",
+          description: "Anyone on the internet can see this repository. You choose who can commit.",
+        },
+        private: {
+          label: "Private",
+          description: "You choose who can see and commit to this repository.",
+        },
+      },
+    },
+    bitbucket: {
+      gistOrSnippet: `${en_common.names.bitbucket} Snippet`,
+      create: `Create ${en_common.names.bitbucket} Snippet`,
+      description: (workspace: string) =>
+        `The contents of '${workspace}' will be all in the new ${en_common.names.bitbucket} Snippet.`,
+      error: {
+        formAlert: (error: string) => `Error creating ${en_common.names.bitbucket} Snippet. ${error}`,
+      },
+      form: {
+        select: {
+          label: "Pick a workspace under which the new Snippet will be created.",
+          description: "Pick either a personal or shared workspace.",
+        },
+      },
+    },
+    github: {
+      gistOrSnippet: `${en_common.names.github} Gist`,
+      create: `Create ${en_common.names.github} Gist`,
+      description: (workspace: string) =>
+        `The contents of '${workspace}' will be all in the new ${en_common.names.github} Gist.`,
+      error: {
+        formAlert: (error: string) => `Error creating ${en_common.names.github} Gist. ${error}`,
+      },
+      form: {
+        select: {
+          label: "The Gist will be created under the following user.",
+          description: "Currently GitHub does not allow to create Gists in GitHub organizations.",
+        },
+      },
+    },
+  },
+  loadOrganizationsSelect: {
+    bitbucket: {
+      user: "Bitbucket user",
+      organizations: "Bitbucket workspaces",
+    },
+    github: {
+      user: "GitHub user",
+      organizations: "GitHub organizations",
     },
   },
 };

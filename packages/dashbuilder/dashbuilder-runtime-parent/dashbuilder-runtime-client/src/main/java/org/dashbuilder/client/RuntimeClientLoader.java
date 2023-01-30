@@ -39,6 +39,7 @@ import org.dashbuilder.client.screens.RouterScreen;
 import org.dashbuilder.client.setup.RuntimeClientMode;
 import org.dashbuilder.client.setup.RuntimeClientSetup;
 import org.dashbuilder.dataset.events.DataSetDefRemovedEvent;
+import org.dashbuilder.shared.event.UpdatedGlobalSettingsEvent;
 import org.dashbuilder.shared.event.UpdatedRuntimeModelEvent;
 import org.dashbuilder.shared.model.DashbuilderRuntimeMode;
 import org.dashbuilder.shared.model.RuntimeModel;
@@ -74,6 +75,8 @@ public class RuntimeClientLoader {
 
     Event<UpdatedRuntimeModelEvent> updatedRuntimeModelEvent;
 
+    Event<UpdatedGlobalSettingsEvent> updatedGlobalSettingsEvent;
+
     RouterScreen router;
 
     RuntimeClientMode mode;
@@ -103,6 +106,7 @@ public class RuntimeClientLoader {
                                RuntimeModelContentListener contentListener,
                                Event<UpdatedRuntimeModelEvent> updatedRuntimeModelEvent,
                                Event<DataSetDefRemovedEvent> dataSetDefRemovedEvent,
+                               Event<UpdatedGlobalSettingsEvent> updatedGlobalSettingsEvent,
                                RouterScreen router) {
         this.runtimeModelResourceClient = runtimeModelResourceClient;
         this.perspectiveEditorGenerator = perspectiveEditorGenerator;
@@ -114,6 +118,7 @@ public class RuntimeClientLoader {
         this.loading = loading;
         this.updatedRuntimeModelEvent = updatedRuntimeModelEvent;
         this.dataSetDefRemovedEvent = dataSetDefRemovedEvent;
+        this.updatedGlobalSettingsEvent = updatedGlobalSettingsEvent;
         this.router = router;
     }
 
@@ -247,7 +252,14 @@ public class RuntimeClientLoader {
         return hideNavBar;
     }
 
-    public void loadClientModel(String content) {
+    /**
+     * Loads the given content and attempts to route the result. 
+     * @param content
+     *  The content to be loaded
+     * @return
+     *  true if client model was sucessfully loaded.
+     */
+    public boolean loadContentAndRoute(String content) {
         try {
             if (content == null || content.trim().isEmpty()) {
                 clientModel = null;
@@ -257,11 +269,15 @@ public class RuntimeClientLoader {
                 var runtimeModel = parser.parse(content);
                 registerModel(runtimeModel);
                 this.clientModel = runtimeModel;
+                updatedGlobalSettingsEvent.fire(new UpdatedGlobalSettingsEvent(runtimeModel.getGlobalSettings()));
                 updatedRuntimeModelEvent.fire(new UpdatedRuntimeModelEvent(""));
+                return true;
             }
         } catch (Exception e) {
             router.goToContentError(e);
         }
+
+        return false;
     }
 
     private void loadClientModel(String url,
@@ -276,10 +292,11 @@ public class RuntimeClientLoader {
         }).then(content -> {
             loading.hideBusyIndicator();
             try {
-                loadClientModel(content);
-                responseConsumer.accept(this.clientModel);
+                if (loadContentAndRoute(content)) {
+                    responseConsumer.accept(this.clientModel);
+                }
             } catch (Exception e) {
-                error.accept("Error loading content", e);
+                error.accept("Error loading client content", e);
             }
             return null;
         }).catch_(errorResponse -> {
@@ -304,7 +321,7 @@ public class RuntimeClientLoader {
     }
 
     private void setupEditorMode() {
-        contentListener.start(content -> this.loadClientModel(content));
+        contentListener.start(content -> this.loadContentAndRoute(content));
     }
 
     private void handleBackendResponse(Consumer<RuntimeModel> modelLoaded,
@@ -375,7 +392,10 @@ public class RuntimeClientLoader {
     private String resolveModel(String importID) {
         // TODO: improve URL check
         if (importID.startsWith("http://") || importID.startsWith("https://")) {
-            return importID;
+            if (setup.getAllowExternal()) {
+                return importID;
+            }
+            throw new IllegalArgumentException("External models are not enabled");
         }
         return clientModelBaseUrl + importID;
     }

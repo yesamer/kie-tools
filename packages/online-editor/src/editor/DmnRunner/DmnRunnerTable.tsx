@@ -21,9 +21,10 @@ import { DmnRunnerMode } from "./DmnRunnerStatus";
 import { DecisionResult, InputRow } from "@kie-tools/form-dmn";
 import { PanelId } from "../EditorPageDockDrawer";
 import { useElementsThatStopKeyboardEventsPropagation } from "@kie-tools-core/keyboard-shortcuts/dist/channel";
-import { WorkspaceFile } from "../../workspace/WorkspacesContext";
+import { WorkspaceFile } from "@kie-tools-core/workspaces-git-fs/dist/context/WorkspacesContext";
 import { DmnRunnerLoading } from "./DmnRunnerLoading";
-import { Holder, useCancelableEffect } from "../../reactExt/Hooks";
+import { Holder } from "@kie-tools-core/react-hooks/dist/Holder";
+import { useCancelableEffect } from "@kie-tools-core/react-hooks/dist/useCancelableEffect";
 import { Drawer, DrawerContent, DrawerPanelContent } from "@patternfly/react-core/dist/js/components/Drawer";
 import { TableOperation } from "@kie-tools/boxed-expression-component/dist/api";
 import { EmptyState, EmptyStateBody, EmptyStateIcon } from "@patternfly/react-core/dist/js/components/EmptyState";
@@ -34,6 +35,7 @@ import { useOnlineI18n } from "../../i18n";
 import { Unitables, UnitablesApi } from "@kie-tools/unitables/dist/Unitables";
 import { DmnTableResults } from "@kie-tools/unitables-dmn/dist/DmnTableResults";
 import { DmnUnitablesValidator } from "@kie-tools/unitables-dmn/dist/DmnUnitablesValidator";
+import { useExtendedServices } from "../../kieSandboxExtendedServices/KieSandboxExtendedServicesContext";
 
 interface Props {
   isReady?: boolean;
@@ -44,6 +46,7 @@ interface Props {
 }
 
 export function DmnRunnerTable(props: Props) {
+  const extendedServices = useExtendedServices();
   const dmnRunnerState = useDmnRunnerState();
   const dmnRunnerDispatch = useDmnRunnerDispatch();
   const [rowCount, setRowCount] = useState<number>(dmnRunnerState.inputRows?.length ?? 1);
@@ -97,7 +100,7 @@ export function DmnRunnerTable(props: Props) {
             if (payload === undefined) {
               return;
             }
-            return dmnRunnerState.service.result(payload);
+            return extendedServices.client.result(payload);
           })
         );
         if (canceled.get()) {
@@ -121,7 +124,7 @@ export function DmnRunnerTable(props: Props) {
         return undefined;
       }
     },
-    [props.isReady, dmnRunnerDispatch, dmnRunnerState.service]
+    [props.isReady, dmnRunnerDispatch, extendedServices.client]
   );
 
   // Debounce to avoid multiple updates caused by uniforms library
