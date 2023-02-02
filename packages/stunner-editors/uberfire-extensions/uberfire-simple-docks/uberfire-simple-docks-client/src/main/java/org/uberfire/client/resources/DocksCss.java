@@ -50,9 +50,6 @@ public interface DocksCss extends CssResource {
     @ClassName("buttonFocused")
     String buttonFocused();
 
-    @ClassName("southDockItem")
-    String southDockItem();
-
     @ClassName("resizableBar")
     String resizableBar();
 
