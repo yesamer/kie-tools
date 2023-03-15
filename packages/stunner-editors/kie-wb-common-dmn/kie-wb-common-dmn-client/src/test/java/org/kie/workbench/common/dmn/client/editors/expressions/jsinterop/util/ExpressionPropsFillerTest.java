@@ -149,7 +149,6 @@ public class ExpressionPropsFillerTest {
         assertThat(expressionProps)
                 .isNotNull()
                 .isExactlyInstanceOf(ListProps.class);
-        assertThat(((ListProps) expressionProps).width).isEqualTo(listExpression.getComponentWidths().get(1));
         assertThat(((ListProps) expressionProps).items)
                 .isNotNull()
                 .hasSize(2);

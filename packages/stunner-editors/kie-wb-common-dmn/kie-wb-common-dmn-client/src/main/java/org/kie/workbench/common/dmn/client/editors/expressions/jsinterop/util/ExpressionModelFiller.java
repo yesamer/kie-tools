@@ -122,7 +122,6 @@ public class ExpressionModelFiller {
                                           final ListProps listProps,
                                           final UnaryOperator<QName> qNameNormalizer) {
         listExpression.setId(new Id(listProps.id));
-        listExpression.getComponentWidths().set(1, listProps.width);
         listExpression.getExpression().clear();
         listExpression.getExpression().addAll(itemsConvertForListExpression(listProps, listExpression, qNameNormalizer));
     }

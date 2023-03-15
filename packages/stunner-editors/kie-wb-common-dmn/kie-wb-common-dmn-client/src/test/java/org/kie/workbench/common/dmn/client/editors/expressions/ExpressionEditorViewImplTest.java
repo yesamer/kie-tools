@@ -624,7 +624,7 @@ public class ExpressionEditorViewImplTest {
 
     @Test
     public void testUpdateExpressionListProps() {
-        final ListProps props = new ListProps("", "", ExpressionType.LIST.getText(), null, 0d);
+        final ListProps props = new ListProps("", "", ExpressionType.LIST.getText(), null);
 
         doNothing().when(view).executeUndoableExpressionCommand(any());
 
