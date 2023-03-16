@@ -180,7 +180,7 @@ public class ExpressionPropsFillerTest {
         assertThat(expressionProps)
                 .isNotNull()
                 .isExactlyInstanceOf(InvocationProps.class);
-        assertThat(((InvocationProps) expressionProps).invokedFunction.functionName).isEqualTo(invokedFunctionText);
+        assertThat(((InvocationProps) expressionProps).invokedFunction.name).isEqualTo(invokedFunctionText);
         assertThat(((InvocationProps) expressionProps).invokedFunction.id).isEqualTo(invokedFunctionID);
         assertThat(((InvocationProps) expressionProps).bindingEntries)
                 .isNotNull()
