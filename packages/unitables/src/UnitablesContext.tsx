@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Red Hat, Inc. and/or its affiliates.
+ * Copyright 2023 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,16 @@
  * limitations under the License.
  */
 
-.boxed-expression-provider .hit-policy-container,
-.boxed-expression-provider .hit-policy-selector,
-.boxed-expression-provider .builtin-aggregator-selector {
-  font-size: small;
+import * as React from "react";
+import { useContext } from "react";
+
+export interface UnitablesContextType {
+  internalChange: boolean;
+  setInternalChange: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-.hit-policy-flex-container {
-  padding-top: 10px;
-  display: flex;
-}
+export const UnitablesContext = React.createContext<UnitablesContextType>({} as any);
 
-.hit-policy-flex-container .pf-c-menu {
-  box-shadow: none;
-  width: 240px;
-  padding-left: 10px;
-  padding-right: 10px;
+export function useUnitablesContext() {
+  return useContext(UnitablesContext);
 }
