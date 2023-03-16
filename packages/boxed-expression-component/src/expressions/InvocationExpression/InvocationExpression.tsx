@@ -176,7 +176,10 @@ export function InvocationExpression(invocationExpression: InvocationExpressionD
         if (u.column.originalId === "functionName") {
           setExpression((prev) => ({
             ...prev,
-            functionName: u.name,
+            invokedFunction: {
+              ...prev,
+              functionName: u.name,
+            },
           }));
         }
       }
