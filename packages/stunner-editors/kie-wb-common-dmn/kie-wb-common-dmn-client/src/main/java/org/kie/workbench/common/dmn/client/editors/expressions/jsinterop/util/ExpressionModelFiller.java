@@ -90,7 +90,7 @@ public class ExpressionModelFiller {
 
     public static void fillLiteralExpression(final LiteralExpression literalExpression, final LiteralProps literalProps) {
         literalExpression.setId(new Id(literalProps.id));
-        literalExpression.getComponentWidths().set(0, literalProps.width);
+        fillExpressionComponentWidths(literalExpression, 0, literalProps.width);
         literalExpression.setText(new Text(literalProps.content));
     }
 
@@ -98,8 +98,8 @@ public class ExpressionModelFiller {
                                              final ContextProps contextProps,
                                              final UnaryOperator<QName> qNameNormalizer) {
         contextExpression.setId(new Id(contextProps.id));
-        contextExpression.getComponentWidths().set(1, contextProps.entryInfoWidth);
-        contextExpression.getComponentWidths().set(2, contextProps.entryExpressionWidth);
+        fillExpressionComponentWidths(contextExpression, 1, contextProps.entryInfoWidth);
+        fillExpressionComponentWidths(contextExpression, 2, contextProps.entryExpressionWidth);
         contextExpression.getContextEntry().clear();
         contextExpression.getContextEntry().addAll(contextEntriesConvertForContextExpression(contextProps, qNameNormalizer));
         contextExpression.getContextEntry().add(entryResultConvertForContextExpression(contextProps, qNameNormalizer));
@@ -113,7 +113,7 @@ public class ExpressionModelFiller {
         relationExpression.getColumn().addAll(columnsConvertForRelationExpression(relationProps, qNameNormalizer));
         final int columnsLength = relationProps.columns == null ? 0 : relationProps.columns.length;
         IntStream.range(0, columnsLength)
-                .forEach(index -> relationExpression.getComponentWidths().set(index + 1, Objects.requireNonNull(relationProps.columns)[index].width));
+                .forEach(index -> fillExpressionComponentWidths(relationExpression, index + 1, Objects.requireNonNull(relationProps.columns)[index].width));
         relationExpression.getRow().clear();
         relationExpression.getRow().addAll(rowsConvertForRelationExpression(relationProps));
     }
@@ -131,8 +131,8 @@ public class ExpressionModelFiller {
                                                 final UnaryOperator<QName> qNameNormalizer) {
         final LiteralExpression invokedFunction = new LiteralExpression();
         invocationExpression.setId(new Id(invocationProps.id));
-        invocationExpression.getComponentWidths().set(1, invocationProps.entryInfoWidth);
-        invocationExpression.getComponentWidths().set(2, invocationProps.entryExpressionWidth);
+        fillExpressionComponentWidths(invocationExpression,1, invocationProps.entryInfoWidth);
+        fillExpressionComponentWidths(invocationExpression,2, invocationProps.entryExpressionWidth);
         invokedFunction.setId(new Id(invocationProps.invokedFunction.id));
         invokedFunction.setText(new Text(invocationProps.invokedFunction.functionName));
         invocationExpression.setExpression(invokedFunction);
@@ -145,7 +145,7 @@ public class ExpressionModelFiller {
                                               final UnaryOperator<QName> qNameNormalizer) {
         final FunctionDefinition.Kind functionKind = FunctionDefinition.Kind.fromValue(functionProps.functionKind);
         functionExpression.setId(new Id(functionProps.id));
-        functionExpression.getComponentWidths().set(1, functionProps.classAndMethodNamesWidth);
+        fillExpressionComponentWidths(functionExpression, 1, functionProps.classAndMethodNamesWidth);
         functionExpression.getFormalParameter().clear();
         functionExpression.getFormalParameter().addAll(formalParametersConvertForFunctionExpression(functionProps, qNameNormalizer));
         functionExpression.setKind(functionKind);
@@ -171,6 +171,14 @@ public class ExpressionModelFiller {
         updateComponentWidthsForDecisionTableExpression(decisionTableExpression, decisionTableProps);
         decisionTableExpression.getRule().clear();
         decisionTableExpression.getRule().addAll(rulesConvertForDecisionTableExpression(decisionTableProps));
+    }
+
+    private static void fillExpressionComponentWidths(Expression expression, int componentIndex, Double width) {
+        if (Objects.isNull(width)) {
+            expression.getComponentWidths().remove(componentIndex);
+        } else {
+            expression.getComponentWidths().set(componentIndex, width);
+        }
     }
 
     private static Expression buildAndFillNestedExpression(final ExpressionProps props,
@@ -421,14 +429,14 @@ public class ExpressionModelFiller {
         final Clause[] outputProps = Optional.ofNullable(decisionTableProps.output).orElse(new Clause[0]);
         final Annotation[] annotationProps = Optional.ofNullable(decisionTableProps.annotations).orElse(new Annotation[0]);
         IntStream.range(0, inputProps.length)
-                .forEach(index -> decisionTableExpression.getComponentWidths().set(index + 1, inputProps[index].width));
+                .forEach(index -> fillExpressionComponentWidths(decisionTableExpression, index + 1, inputProps[index].width));
         IntStream.range(0, outputProps.length)
-                .forEach(index -> decisionTableExpression.getComponentWidths().set(
-                        inputProps.length + index + 1, outputProps[index].width)
+                .forEach(index -> fillExpressionComponentWidths(
+                        decisionTableExpression, inputProps.length + index + 1, outputProps[index].width)
                 );
         IntStream.range(0, annotationProps.length)
-                .forEach(index -> decisionTableExpression.getComponentWidths().set(
-                        inputProps.length + outputProps.length + index + 1, annotationProps[index].width)
+                .forEach(index -> fillExpressionComponentWidths(
+                        decisionTableExpression, inputProps.length + outputProps.length + index + 1, annotationProps[index].width)
                 );
     }
 
