@@ -134,7 +134,7 @@ public class ExpressionModelFiller {
         invocationExpression.getComponentWidths().set(1, invocationProps.entryInfoWidth);
         invocationExpression.getComponentWidths().set(2, invocationProps.entryExpressionWidth);
         invokedFunction.setId(new Id(invocationProps.invokedFunction.id));
-        invokedFunction.setText(new Text(invocationProps.invokedFunction.functionName));
+        invokedFunction.setText(new Text(invocationProps.invokedFunction.name));
         invocationExpression.setExpression(invokedFunction);
         invocationExpression.getBinding().clear();
         invocationExpression.getBinding().addAll(bindingsConvertForInvocationExpression(invocationProps, qNameNormalizer));
