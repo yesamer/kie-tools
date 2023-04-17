@@ -16,6 +16,7 @@
 
 package org.kie.workbench.common.dmn.client.editors.documentation;
 
+import java.util.Arrays;
 import javax.enterprise.context.Dependent;
 import javax.inject.Inject;
 
@@ -27,6 +28,7 @@ import org.jboss.errai.ui.shared.api.annotations.DataField;
 import org.jboss.errai.ui.shared.api.annotations.EventHandler;
 import org.jboss.errai.ui.shared.api.annotations.Templated;
 import org.kie.workbench.common.dmn.api.qualifiers.DMNEditor;
+import org.kie.workbench.common.dmn.client.common.KogitoChannelHelper;
 import org.kie.workbench.common.dmn.client.editors.documentation.common.DMNDocumentationService;
 import org.kie.workbench.common.dmn.client.editors.documentation.common.HTMLDownloadHelper;
 import org.kie.workbench.common.stunner.core.client.util.PrintHelper;
@@ -35,6 +37,8 @@ import org.kie.workbench.common.stunner.core.documentation.DefaultDiagramDocumen
 import org.kie.workbench.common.stunner.core.documentation.DocumentationView;
 import org.kie.workbench.common.stunner.core.documentation.model.DocumentationOutput;
 
+import static org.appformer.client.context.Channel.VSCODE_DESKTOP;
+import static org.appformer.client.context.Channel.VSCODE_WEB;
 import static org.kie.workbench.common.dmn.client.editors.types.common.HiddenHelper.hide;
 import static org.kie.workbench.common.stunner.core.documentation.model.DocumentationOutput.EMPTY;
 
@@ -56,30 +60,33 @@ public class DMNDocumentationView extends DefaultDiagramDocumentationView {
 
     private final PrintHelper printHelper;
 
-    private final DMNDocumentationService documentationService;
+    private final KogitoChannelHelper kogitoChannelHelper;
 
-    private final DMNDocumentationViewButtonsVisibilitySupplier buttonsVisibilitySupplier;
+    private final DMNDocumentationService documentationService;
 
     @Inject
     public DMNDocumentationView(final HTMLDivElement documentationContent,
                                 final HTMLButtonElement printButton,
                                 final HTMLButtonElement downloadHtmlFile,
+                                final KogitoChannelHelper kogitoChannelHelper,
                                 final PrintHelper printHelper,
-                                final DMNDocumentationService documentationService,
-                                final DMNDocumentationViewButtonsVisibilitySupplier buttonsVisibilitySupplier) {
+                                final DMNDocumentationService documentationService) {
         this.documentationContent = documentationContent;
         this.printButton = printButton;
         this.downloadHtmlFile = downloadHtmlFile;
+        this.kogitoChannelHelper = kogitoChannelHelper;
         this.printHelper = printHelper;
         this.documentationService = documentationService;
-        this.buttonsVisibilitySupplier = buttonsVisibilitySupplier;
     }
 
     @Override
     public DocumentationView<Diagram> refresh() {
+        /** HERE I SHOULD CALL THE REACT COMPONENT **/
+        //* PASSING THE DIAGRAM ? */
+
         refreshDocumentationHTML();
         refreshDocumentationHTMLAfter200ms();
-        if (!buttonsVisibilitySupplier.isButtonsVisible()) {
+        if (kogitoChannelHelper.isCurrentChannelEnabled(Arrays.asList(VSCODE_DESKTOP, VSCODE_WEB))) {
             hide(printButton);
         }
         return this;

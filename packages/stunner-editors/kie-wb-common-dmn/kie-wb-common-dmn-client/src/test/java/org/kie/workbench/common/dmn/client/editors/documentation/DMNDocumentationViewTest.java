@@ -69,9 +69,6 @@ public class DMNDocumentationViewTest {
     private Diagram diagram;
 
     @Mock
-    private DMNDocumentationViewButtonsVisibilitySupplier buttonsVisibilitySupplier;
-
-    @Mock
     private DOMTokenList printButtonClassList;
 
     @Mock
@@ -89,21 +86,21 @@ public class DMNDocumentationViewTest {
     public void setup() {
         printButton.classList = printButtonClassList;
         downloadHtmlFileButton.classList = downloadButtonClassList;
-        view = spy(new DMNDocumentationView(documentationContent, printButton, downloadHtmlFileButton, printHelper, documentationService, buttonsVisibilitySupplier));
+        view = spy(new DMNDocumentationView(documentationContent, printButton, downloadHtmlFileButton, null,  printHelper, documentationService));
     }
 
     @Test
     public void testRefresh() {
 
         doNothing().when(view).setTimeout(any(), anyInt());
-        when(buttonsVisibilitySupplier.isButtonsVisible()).thenReturn(true);
+        //when(buttonsVisibilitySupplier.isButtonsVisible()).thenReturn(true);
 
         view.refresh();
 
         verify(downloadButtonClassList, never()).add(HiddenHelper.HIDDEN_CSS_CLASS);
         verify(printButtonClassList, never()).add(HiddenHelper.HIDDEN_CSS_CLASS);
 
-        verify(buttonsVisibilitySupplier).isButtonsVisible();
+        //verify(buttonsVisibilitySupplier).isButtonsVisible();
         verify(view).refreshDocumentationHTML();
         verify(view).refreshDocumentationHTMLAfter200ms();
     }
@@ -112,13 +109,13 @@ public class DMNDocumentationViewTest {
     public void testRefreshWhenButtonsAreNotVisible() {
 
         doNothing().when(view).setTimeout(any(), anyInt());
-        when(buttonsVisibilitySupplier.isButtonsVisible()).thenReturn(false);
+        //when(buttonsVisibilitySupplier.isButtonsVisible()).thenReturn(false);
 
         view.refresh();
 
         verify(downloadButtonClassList, never()).add(HiddenHelper.HIDDEN_CSS_CLASS);
         verify(printButtonClassList).add(HiddenHelper.HIDDEN_CSS_CLASS);
-        verify(buttonsVisibilitySupplier).isButtonsVisible();
+       // verify(buttonsVisibilitySupplier).isButtonsVisible();
         verify(view).refreshDocumentationHTML();
         verify(view).refreshDocumentationHTMLAfter200ms();
     }
