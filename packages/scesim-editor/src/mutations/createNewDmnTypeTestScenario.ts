@@ -18,15 +18,25 @@
  */
 
 import { basename } from "path";
-import { SceSim__settingsType } from "@kie-tools/scesim-marshaller/dist/schemas/scesim-1_8/ts-gen/types";
+import {
+  SceSim__FactMappingType,
+  SceSim__FactMappingValuesTypes,
+  SceSim__settingsType,
+} from "@kie-tools/scesim-marshaller/dist/schemas/scesim-1_8/ts-gen/types";
 import { ExternalDmn } from "../TestScenarioEditor";
 
 export function createNewDmnTypeTestScenario({
   dmnModel,
+  factMappings,
+  factMappingValues,
+  isAutoFillTableEnabled,
   isTestSkipped,
   settingsModel,
 }: {
   dmnModel: ExternalDmn;
+  factMappings: SceSim__FactMappingType[];
+  factMappingValues: SceSim__FactMappingValuesTypes[];
+  isAutoFillTableEnabled: boolean;
   isTestSkipped: boolean;
   settingsModel: SceSim__settingsType;
 }) {
@@ -35,4 +45,10 @@ export function createNewDmnTypeTestScenario({
   settingsModel.dmnNamespace = { __$$text: dmnModel.model.definitions["@_namespace"] };
   settingsModel.skipFromBuild = { __$$text: isTestSkipped };
   settingsModel.type = { __$$text: "DMN" };
+
+  if (isAutoFillTableEnabled) {
+    console.log();
+  } else {
+    console.log();
+  }
 }
