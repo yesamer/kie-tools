@@ -18,7 +18,9 @@
  */
 
 import * as React from "react";
-import { useCallback } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { useCancelableEffect } from "@kie-tools-core/react-hooks/dist/useCancelableEffect";
+import { basename, dirname, extname } from "path";
 
 import { Button } from "@patternfly/react-core/dist/js/components/Button";
 import { Checkbox } from "@patternfly/react-core/dist/js/components/Checkbox";
@@ -27,6 +29,8 @@ import { Form, FormGroup } from "@patternfly/react-core/dist/js/components/Form"
 import { FormSelect, FormSelectOption } from "@patternfly/react-core/dist/js/components/FormSelect";
 import { HelpIcon } from "@patternfly/react-icons/dist/esm/icons/help-icon";
 import { Icon } from "@patternfly/react-core/dist/js/components/Icon";
+import { Select, SelectOption, SelectVariant } from "@patternfly/react-core/dist/js/components/Select";
+
 import { TextInput } from "@patternfly/react-core/dist/js/components/TextInput";
 import { Title } from "@patternfly/react-core/dist/js/components/Title";
 import { Tooltip } from "@patternfly/react-core/dist/js/components/Tooltip";
@@ -38,9 +42,15 @@ import { useTestScenarioEditorStoreApi } from "../store/TestScenarioStoreContext
 import { useTestScenarioEditorI18n } from "../i18n";
 
 import "./TestScenarioCreationPanel.css";
+import { useExternalModels } from "../externalModels/TestScenarioEditorDependenciesContext";
+import { ExternalDmn } from "../TestScenarioEditor";
+import { useTestScenarioEditor } from "../TestScenarioEditorContext";
 
 function TestScenarioCreationPanel() {
   const { i18n } = useTestScenarioEditorI18n();
+  const { externalModelsByNamespace, onRequestExternalModelsAvailableToInclude, onRequestExternalModelByPath } =
+    useExternalModels();
+  const { onRequestToResolvePath } = useTestScenarioEditor();
 
   const assetsOption = [
     { value: "", label: i18n.creationPanel.assetsOption.noChoice, disabled: true },
@@ -53,8 +63,61 @@ function TestScenarioCreationPanel() {
   const [isStatelessSessionRule, setStatelessSessionRule] = React.useState(false);
   const [isTestSkipped, setTestSkipped] = React.useState(false);
   const [kieSessionRule, setKieSessionRule] = React.useState("");
+  const [modelPathRelativeToThisScesim, setModelPathRelativeToThisScesim] = useState<string[] | undefined>(undefined);
+  const [selectedPathRelativeToThisScesim, setSelectedPathRelativeToThisScesim] = useState<string | undefined>(
+    undefined
+  );
+  const [isModelSelectOpen, setModelSelectOpen] = useState(false);
+
   const [ruleFlowGroup, setRuleFlowGroup] = React.useState("");
+
   const testScenarioEditorStoreApi = useTestScenarioEditorStoreApi();
+
+  useCancelableEffect(
+    useCallback(
+      ({ canceled }) => {
+        onRequestExternalModelsAvailableToInclude?.()
+          .then((paths) => {
+            if (canceled.get()) {
+              return;
+            }
+            setModelPathRelativeToThisScesim(paths);
+          })
+          .catch((err) => {
+            console.error(err);
+            return;
+          });
+      },
+      [onRequestExternalModelsAvailableToInclude]
+    )
+  );
+
+  const externalModelsByPathsRelativeToThisScesim = useMemo(
+    () =>
+      Object.entries(externalModelsByNamespace ?? {}).reduce((acc, [namespace, externalModel]) => {
+        if (!externalModel) {
+          console.warn(`Test Scenario EDITOR: Could not find model with namespace '${namespace}'. Ignoring.`);
+          return acc;
+        } else {
+          return acc.set(externalModel.normalizedPosixPathRelativeToTheOpenFile, externalModel);
+        }
+      }, new Map<string, ExternalDmn>()),
+    [externalModelsByNamespace]
+  );
+
+  const modelPathsRelativeToThisScesimNotYetIncluded = useMemo(
+    () =>
+      modelPathRelativeToThisScesim &&
+      modelPathRelativeToThisScesim.filter((path) => {
+        // If externalModel does not exist, or there's no existing import with this
+        // namespace, it can be listed as available for including.
+        const externalModel = externalModelsByPathsRelativeToThisScesim.get(path);
+
+        return !externalModel; //||
+        //(!importsByNamespace.get(externalModel.model.definitions["@_namespace"]))
+      }),
+    [externalModelsByPathsRelativeToThisScesim, /*importsByNamespace,*/ modelPathRelativeToThisScesim]
+  );
 
   const createTestScenario = useCallback(
     (
@@ -100,9 +163,23 @@ function TestScenarioCreationPanel() {
         {assetType === "DMN" && (
           <>
             <FormGroup label={i18n.creationPanel.dmnGroup} isRequired>
-              <FormSelect id="dmn-select" name="dmn-select" value={""} isDisabled>
-                <FormSelectOption isDisabled={true} key={0} value={""} label={i18n.creationPanel.dmnNoChoice} />
-              </FormSelect>
+              <Select
+                variant={SelectVariant.single}
+                placeholderText={i18n.creationPanel.dmnNoChoice}
+                aria-label="Select Input with descriptions"
+                onToggle={setModelSelectOpen}
+                onSelect={(__e, path) => {
+                  if (typeof path !== "string") {
+                    throw new Error(`Invalid path for an included model ${JSON.stringify(path)}`);
+                  }
+
+                  setSelectedPathRelativeToThisScesim(path);
+                  setModelSelectOpen(false);
+                }}
+                selections={selectedPathRelativeToThisScesim}
+                isOpen={isModelSelectOpen}
+                aria-labelledby={"titleId"}
+              ></Select>
             </FormGroup>
             <FormGroup>
               <Checkbox

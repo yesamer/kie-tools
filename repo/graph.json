@@ -2138,6 +2138,11 @@
       },
       {
         "source": "@kie-tools/scesim-editor",
+        "target": "@kie-tools-core/react-hooks",
+        "weight": 1
+      },
+      {
+        "source": "@kie-tools/scesim-editor",
         "target": "@kie-tools/boxed-expression-component",
         "weight": 1
       },
@@ -2154,11 +2159,6 @@
       {
         "source": "@kie-tools/scesim-editor-envelope",
         "target": "@kie-tools-core/editor",
-        "weight": 1
-      },
-      {
-        "source": "@kie-tools/scesim-editor-envelope",
-        "target": "@kie-tools-core/react-hooks",
         "weight": 1
       },
       {
