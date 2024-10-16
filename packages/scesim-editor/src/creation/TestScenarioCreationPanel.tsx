@@ -162,14 +162,17 @@ function TestScenarioCreationPanel() {
         assetType === "DMN"
           ? createNewDmnTypeTestScenario({
               dmnModel: selectedModel!,
-              factMappings:
+              factMappingsModel:
                 state.scesim.model.ScenarioSimulationModel.simulation.scesimModelDescriptor.factMappings.FactMapping!,
-              factMappingValues: state.scesim.model.ScenarioSimulationModel.simulation.scesimData.Scenario!,
+              factMappingValuesModel: state.scesim.model.ScenarioSimulationModel.simulation.scesimData.Scenario!,
               isAutoFillTableEnabled,
               isTestSkipped,
               settingsModel: state.scesim.model.ScenarioSimulationModel.settings,
             })
           : createNewRuleTypeTestScenario({
+              factMappingsModel:
+                state.scesim.model.ScenarioSimulationModel.simulation.scesimModelDescriptor.factMappings.FactMapping!,
+              factMappingValuesModel: state.scesim.model.ScenarioSimulationModel.simulation.scesimData.Scenario!,
               isStatelessSessionRule,
               isTestSkipped,
               kieSessionRule,

@@ -17,15 +17,24 @@
  * under the License.
  */
 
-import { SceSim__settingsType } from "@kie-tools/scesim-marshaller/dist/schemas/scesim-1_8/ts-gen/types";
+import {
+  SceSim__FactMappingType,
+  SceSim__FactMappingValuesTypes,
+  SceSim__settingsType,
+} from "@kie-tools/scesim-marshaller/dist/schemas/scesim-1_8/ts-gen/types";
+import { pushFactMappings } from "./pushFactMappings";
 
 export function createNewRuleTypeTestScenario({
+  factMappingsModel,
+  factMappingValuesModel,
   isStatelessSessionRule,
   isTestSkipped,
   kieSessionRule,
   ruleFlowGroup,
   settingsModel,
 }: {
+  factMappingsModel: SceSim__FactMappingType[];
+  factMappingValuesModel: SceSim__FactMappingValuesTypes[];
   isStatelessSessionRule: boolean;
   isTestSkipped: boolean;
   kieSessionRule: string;
@@ -37,4 +46,29 @@ export function createNewRuleTypeTestScenario({
   settingsModel.skipFromBuild = { __$$text: isTestSkipped };
   settingsModel.stateless = { __$$text: isStatelessSessionRule };
   settingsModel.type = { __$$text: "RULE" };
+
+  const factMappingsToPush = [
+    {
+      className: "java.lang.Void",
+      columnWidth: 300,
+      expressionAlias: "PROPERTY-1",
+      expressionElements: [],
+      expressionIdentifierType: "GIVEN",
+      factAlias: "INSTANCE-1",
+      factIdentifierName: "INSTANCE-1",
+      factIdentifierClassName: "java.lang.Void",
+    },
+    {
+      className: "java.lang.Void",
+      columnWidth: 300,
+      expressionAlias: "PROPERTY-2",
+      expressionElements: [],
+      expressionIdentifierType: "EXPECT",
+      factAlias: "INSTANCE-2",
+      factIdentifierName: "INSTANCE-2",
+      factIdentifierClassName: "java.lang.Void",
+    },
+  ];
+
+  pushFactMappings({ factMappingsModel, factMappingsToPush, factMappingValuesModel });
 }

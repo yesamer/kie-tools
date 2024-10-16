@@ -167,8 +167,8 @@ function TestScenarioMainPanel({ scesimFilePath }: { scesimFilePath: string | un
   const testScenarioEditorStoreApi = useTestScenarioEditorStoreApi();
   const navigation = useTestScenarioEditorStore((s) => s.navigation);
   const scesimModel = useTestScenarioEditorStore((s) => s.scesim.model);
-  const isAlertEnabled = true; // Will be managed in kie-issue#970
   const testScenarioType = scesimModel.ScenarioSimulationModel.settings.type?.__$$text.toUpperCase();
+  const isAlertEnabled = testScenarioType !== "DMN"; // Will be managed in kie-issue#970
 
   const scenarioTableScrollableElementRef = useRef<HTMLDivElement | null>(null);
   const backgroundTableScrollableElementRef = useRef<HTMLDivElement | null>(null);
