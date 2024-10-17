@@ -24,14 +24,17 @@ import {
 } from "@kie-tools/scesim-marshaller/dist/schemas/scesim-1_8/ts-gen/types";
 import { pushFactMappings } from "./pushFactMappings";
 
+/**
+ * It creates a new RULE-type Test Scenario, adding 2 empty columns (FactMappings) and its related data cells (FactMappingValues)
+ */
 export function createNewRuleTypeTestScenario({
-  factMappingsModel,
-  factMappingValuesModel,
+  factMappingsModel, // The SceSim FactMappings model (which represent Columns) to be mutated when isAutoFillTableEnabled is true
+  factMappingValuesModel, // The SceSim FactMappingValue model (which represent a Data Rows) to be mutated when isAutoFillTableEnabled is true
   isStatelessSessionRule,
   isTestSkipped,
   kieSessionRule,
   ruleFlowGroup,
-  settingsModel,
+  settingsModel, // The SceSim Setting model to be mutated with the user provided infos.
 }: {
   factMappingsModel: SceSim__FactMappingType[];
   factMappingValuesModel: SceSim__FactMappingValuesTypes[];

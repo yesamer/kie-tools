@@ -64,13 +64,18 @@ type FactMapping = {
   factIdentifierClassName: string;
 };
 
+/**
+ * It creates a new DMN-type Test Scenario. If isAutoFillTableEnabled is true, the logic automatically fills the
+ * table adding a GIVEN column instance for all the DMN Inputs nodes, and an EXPECT column instance for all the DMN Decision nodes.
+ * If isAutoFillTableEnabled is false, 2 empty columns are added.
+ */
 export function createNewDmnTypeTestScenario({
   dmnModel,
-  factMappingsModel,
-  factMappingValuesModel,
-  isAutoFillTableEnabled,
+  factMappingsModel, // The SceSim FactMappings model (which represent Columns) to be mutated when isAutoFillTableEnabled is true
+  factMappingValuesModel, // The SceSim FactMappingValue model (which represent a Data Rows) to be mutated when isAutoFillTableEnabled is true
+  isAutoFillTableEnabled, // The user determines if the table should be automatically filled with the extracted data from the DMN Model
   isTestSkipped,
-  settingsModel,
+  settingsModel, // The SceSim Setting model to be mutated with the user provided infos.
 }: {
   dmnModel: ExternalDmn;
   factMappingsModel: SceSim__FactMappingType[];
@@ -85,105 +90,43 @@ export function createNewDmnTypeTestScenario({
   settingsModel.skipFromBuild = { __$$text: isTestSkipped };
   settingsModel.type = { __$$text: "DMN" };
 
-  const givenFactMappingsToPush = [] as FactMapping[];
-  const expectFactMappingsToPush = [] as FactMapping[];
+  let givenFactMappingsToPush = [] as FactMapping[];
+  let expectFactMappingsToPush = [] as FactMapping[];
 
   if (isAutoFillTableEnabled && dmnModel.model.definitions.drgElement) {
-    const itemDefinitions = dmnModel.model.definitions.itemDefinition!;
-    const itemDefinitionMap = new Map(
-      itemDefinitions.map((itemDefinition) => [itemDefinition["@_name"], itemDefinition] as const)
+    const itemDefinitions = new Map(
+      dmnModel.model.definitions.itemDefinition!.map(
+        (itemDefinition) => [itemDefinition["@_name"], itemDefinition] as const
+      )
     );
 
-    const inputDataElements = dmnModel.model.definitions.drgElement
-      .filter((drgElement) => drgElement.__$$element === "inputData")
-      .map((drgElement) => drgElement as DMN15__tInputData);
-    const decisionElements = dmnModel.model.definitions.drgElement
-      .filter((drgElement) => drgElement.__$$element === "decision")
-      .map((drgElement) => drgElement as DMN15__tDecision);
+    const inputDataElements = dmnModel.model.definitions.drgElement.filter(
+      (drgElement) => drgElement.__$$element === "inputData"
+    );
+    const decisionElements = dmnModel.model.definitions.drgElement.filter(
+      (drgElement) => drgElement.__$$element === "decision"
+    );
 
-    inputDataElements.forEach((inputDataElement) => {
-      if (isSimpleType(inputDataElement.variable!["@_typeRef"]!)) {
-        givenFactMappingsToPush.push(
-          generateSimpleTypeFactMapping(
-            inputDataElement.variable!["@_typeRef"]!,
-            100,
-            [inputDataElement.variable!["@_name"]!],
-            "GIVEN",
-            inputDataElement.variable!["@_name"]!,
-            inputDataElement.variable!["@_typeRef"]!
-          )
-        );
-      } else {
-        const itemDefinition = itemDefinitionMap.get(inputDataElement.variable!["@_typeRef"]!);
-        if (itemDefinition?.typeRef && isSimpleType(itemDefinition?.typeRef?.__$$text)) {
-          generateSimpleTypeFactMapping(
-            itemDefinition?.typeRef?.__$$text,
-            100,
-            [inputDataElement.variable!["@_name"]!],
-            "EXPECT",
-            inputDataElement.variable!["@_name"]!,
-            inputDataElement.variable!["@_typeRef"]!
-          );
-        } else {
-          itemDefinition?.itemComponent!.forEach((itemComponent) => {
-            recursevlyNavigateItemComponent(
-              100,
-              givenFactMappingsToPush,
-              [inputDataElement.variable!["@_name"]!],
-              "GIVEN",
-              itemComponent,
-              inputDataElement.variable!["@_name"]!,
-              inputDataElement.variable!["@_typeRef"]!
-            );
-          });
-        }
-      }
-    });
-
-    decisionElements.forEach((decisionDataElement) => {
-      if (isSimpleType(decisionDataElement.variable!["@_typeRef"]!)) {
-        givenFactMappingsToPush.push(
-          generateSimpleTypeFactMapping(
-            decisionDataElement.variable!["@_typeRef"]!,
-            100,
-            [decisionDataElement.variable!["@_name"]!],
-            "EXPECT",
-            decisionDataElement.variable!["@_name"]!,
-            decisionDataElement.variable!["@_typeRef"]!
-          )
-        );
-      } else {
-        const itemDefinition = itemDefinitionMap.get(decisionDataElement.variable!["@_typeRef"]!);
-        if (itemDefinition?.typeRef && isSimpleType(itemDefinition?.typeRef?.__$$text)) {
-          generateSimpleTypeFactMapping(
-            itemDefinition?.typeRef?.__$$text,
-            100,
-            [decisionDataElement.variable!["@_name"]!],
-            "EXPECT",
-            decisionDataElement.variable!["@_name"]!,
-            decisionDataElement.variable!["@_typeRef"]!
-          );
-        } else {
-          itemDefinition?.itemComponent!.forEach((itemComponent) => {
-            recursevlyNavigateItemComponent(
-              100,
-              expectFactMappingsToPush,
-              [decisionDataElement.variable!["@_name"]!],
-              "EXPECT",
-              itemComponent,
-              decisionDataElement.variable!["@_name"]!,
-              decisionDataElement.variable!["@_typeRef"]!
-            );
-          });
-        }
-      }
-    });
+    /* Generating GIVEN and EXPECT FactMappings and their related FactMappingValues
+       The call order MATTERS, as the generated elements are pushed in the array,
+       we need to generate GIVEN elements BEFORE the EXPECT ones.  */
+    givenFactMappingsToPush = generateFactMappingsAndFactMappingValuesFromDmnModel(
+      inputDataElements,
+      "GIVEN",
+      itemDefinitions
+    );
+    expectFactMappingsToPush = generateFactMappingsAndFactMappingValuesFromDmnModel(
+      decisionElements,
+      "EXPECT",
+      itemDefinitions
+    );
   }
 
+  /* If no GIVEN FactMapping is present, we add an empty one. */
   if (givenFactMappingsToPush.length === 0) {
     givenFactMappingsToPush.push(EMPTY_GIVEN_FACTMAPPING);
   }
-
+  /* If no EXPECT FactMapping is present, we add an empty one. */
   if (expectFactMappingsToPush.length === 0) {
     expectFactMappingsToPush.push(EMPTY_EXPECT_FACTMAPPING);
   }
@@ -209,6 +152,54 @@ function isSimpleType(type: string) {
     "years and months duration",
     "<Undefined>",
   ].includes(type);
+}
+
+function generateFactMappingsAndFactMappingValuesFromDmnModel(
+  drgElements: DMN15__tInputData[] | DMN15__tDecision[],
+  expressionIdentifierType: "EXPECT" | "GIVEN",
+  itemDefinitionMap: Map<string, DMN15__tItemDefinition>
+) {
+  const factMappingsToPush = [] as FactMapping[];
+
+  drgElements.forEach((inputDataElement) => {
+    if (isSimpleType(inputDataElement.variable!["@_typeRef"]!)) {
+      factMappingsToPush.push(
+        generateSimpleTypeFactMapping(
+          inputDataElement.variable!["@_typeRef"]!,
+          100,
+          [inputDataElement.variable!["@_name"]!],
+          expressionIdentifierType,
+          inputDataElement.variable!["@_name"]!,
+          inputDataElement.variable!["@_typeRef"]!
+        )
+      );
+    } else {
+      const itemDefinition = itemDefinitionMap.get(inputDataElement.variable!["@_typeRef"]!);
+      if (itemDefinition?.typeRef && isSimpleType(itemDefinition?.typeRef?.__$$text)) {
+        generateSimpleTypeFactMapping(
+          itemDefinition?.typeRef?.__$$text,
+          100,
+          [inputDataElement.variable!["@_name"]!],
+          expressionIdentifierType,
+          inputDataElement.variable!["@_name"]!,
+          inputDataElement.variable!["@_typeRef"]!
+        );
+      } else {
+        itemDefinition?.itemComponent!.forEach((itemComponent) => {
+          recursevlyNavigateItemComponent(
+            100,
+            factMappingsToPush,
+            [inputDataElement.variable!["@_name"]!],
+            expressionIdentifierType,
+            itemComponent,
+            inputDataElement.variable!["@_name"]!,
+            inputDataElement.variable!["@_typeRef"]!
+          );
+        });
+      }
+    }
+  });
+  return factMappingsToPush;
 }
 
 function generateSimpleTypeFactMapping(
