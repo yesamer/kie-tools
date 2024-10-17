@@ -17,7 +17,6 @@
  * under the License.
  */
 
-import { basename } from "path";
 import {
   SceSim__FactMappingType,
   SceSim__FactMappingValuesTypes,
@@ -85,7 +84,7 @@ export function createNewDmnTypeTestScenario({
   settingsModel: SceSim__settingsType;
 }) {
   settingsModel.dmnFilePath = { __$$text: dmnModel.normalizedPosixPathRelativeToTheOpenFile };
-  settingsModel.dmnName = { __$$text: basename(dmnModel.normalizedPosixPathRelativeToTheOpenFile) };
+  settingsModel.dmnName = { __$$text: dmnModel.model.definitions["@_name"] };
   settingsModel.dmnNamespace = { __$$text: dmnModel.model.definitions["@_namespace"] };
   settingsModel.skipFromBuild = { __$$text: isTestSkipped };
   settingsModel.type = { __$$text: "DMN" };
