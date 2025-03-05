@@ -106,6 +106,11 @@ export type ExternalDmn = {
   svg: string;
 };
 
+export type ExternalDmnWithImportedDmns = {
+  model: ExternalDmn;
+  importedModels: ExternalDmn | undefined;
+};
+
 export type TestScenarioEditorProps = {
   /**
    * When the SceSim represented by `model` ("This SceSim") is DMN-type Test Scenario this prop needs to map their contents by namespace.

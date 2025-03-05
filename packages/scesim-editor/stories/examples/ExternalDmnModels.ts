@@ -1185,3 +1185,113 @@ export const MIXED = `<?xml version="1.0" encoding="UTF-8"?>
     </dmndi:DMNDiagram>
   </dmndi:DMNDI>
 </dmn:definitions>`;
+
+export const IMPORTER = `<?xml version="1.0" encoding="UTF-8" ?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/" expressionLanguage="https://www.omg.org/spec/DMN/20230324/FEEL/" namespace="https://kie.org/dmn/_61F5EA26-D4AB-434F-A6C9-89B3AAF9B60F" id="_EB9B54D1-F94E-43B9-9764-438AC1958B54" name="Importer" xmlns:included0="https://kie.org/dmn/_423904AD-0925-4A04-AD04-2B2EE5263AF7" xmlns:dmndi="https://www.omg.org/spec/DMN/20230324/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" xmlns:kie="https://kie.org/dmn/extensions/1.0">
+  <import id="_CE036DEA-3497-4972-94FF-90FF1D9CC77A" name="math logic" importType="http://www.omg.org/spec/DMN/20180521/MODEL/" namespace="https://kie.org/dmn/_423904AD-0925-4A04-AD04-2B2EE5263AF7" locationURI="dev-webapp/available-dmn-models/imported.dmn" />
+  <inputData name="A" id="_FD4A326B-28DE-4082-940D-8867F46F3A09">
+    <variable name="A" id="_21FB2FE1-68B8-4841-91EB-980948523E9B" typeRef="number" />
+  </inputData>
+  <inputData name="B" id="_90F418D4-6FC2-47BE-8862-CA55A07F1819">
+    <variable name="B" id="_0F3DFB21-AA99-467E-950B-1311BA8A91B2" typeRef="number" />
+  </inputData>
+  <decision name="FinalSUm" id="_8E6F3671-93FE-4F2E-A5C7-BD07AFB6C404">
+    <variable id="_718378C6-EC1E-4195-8E3D-2CF07B34ED47" typeRef="number" name="FinalSUm" />
+    <informationRequirement id="_042793A1-E24F-4AF4-91BA-9548CAD11530">
+      <requiredInput href="#_90F418D4-6FC2-47BE-8862-CA55A07F1819" />
+    </informationRequirement>
+    <informationRequirement id="_05405DA0-E999-41AF-B667-CEE500D4758A">
+      <requiredInput href="#_FD4A326B-28DE-4082-940D-8867F46F3A09" />
+    </informationRequirement>
+    <knowledgeRequirement id="_E8CA47E5-B21D-456B-892B-ACAEC80C58A3">
+      <requiredKnowledge href="https://kie.org/dmn/_423904AD-0925-4A04-AD04-2B2EE5263AF7#_A6D5B020-683B-4EAD-B157-1527BDAB380A" />
+    </knowledgeRequirement>
+    <invocation id="_4F1FAD11-DDAA-4818-A60D-02BC45A525F5" typeRef="number" label="FinalSUm">
+      <literalExpression id="_0CFDC504-03AE-49A7-92CA-F8AECBA80D0C">
+        <text>math logic.simple sum</text>
+      </literalExpression>
+      <binding>
+        <parameter id="_DEA78A5E-E401-45BB-9485-C6698376C8C3" name="p-1" typeRef="number" />
+        <literalExpression id="_6232923D-5202-4C1A-8B48-93478D362822" typeRef="number" label="p-1">
+          <text>A</text>
+        </literalExpression>
+      </binding>
+      <binding>
+        <parameter id="_4FD34A1F-A63B-4131-BBD1-47A97DD6DBED" typeRef="number" name="p-2" />
+        <literalExpression id="_9C0D4963-9425-40AB-86B1-CE43B11AD7C3" typeRef="number" label="p-2">
+          <text>B</text>
+        </literalExpression>
+      </binding>
+    </invocation>
+  </decision>
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram id="_D5B7C411-CD1B-4E38-86F5-4AF83E595B68" name="Default DRD" useAlternativeInputDataShape="false">
+      <di:extension>
+        <kie:ComponentsWidthsExtension>
+          <kie:ComponentWidths dmnElementRef="_4F1FAD11-DDAA-4818-A60D-02BC45A525F5">
+            <kie:width>120</kie:width>
+          </kie:ComponentWidths>
+          <kie:ComponentWidths dmnElementRef="_6232923D-5202-4C1A-8B48-93478D362822">
+            <kie:width>190</kie:width>
+          </kie:ComponentWidths>
+          <kie:ComponentWidths dmnElementRef="_9C0D4963-9425-40AB-86B1-CE43B11AD7C3">
+            <kie:width>190</kie:width>
+          </kie:ComponentWidths>
+        </kie:ComponentsWidthsExtension>
+      </di:extension>
+      <dmndi:DMNShape id="_DD16768C-F1D6-481A-9CED-9596BF47FCA9" dmnElementRef="_FD4A326B-28DE-4082-940D-8867F46F3A09" isCollapsed="false" isListedInputData="false">
+        <dc:Bounds x="80" y="240" width="160" height="80" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="_A754898C-C278-4FE8-9EA3-DA2A774057C0" dmnElementRef="_90F418D4-6FC2-47BE-8862-CA55A07F1819" isCollapsed="false" isListedInputData="false">
+        <dc:Bounds x="360" y="240" width="160" height="80" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="_591BA523-20B1-4480-AAF9-9B10C5182E62" dmnElementRef="_8E6F3671-93FE-4F2E-A5C7-BD07AFB6C404" isCollapsed="false" isListedInputData="false">
+        <dc:Bounds x="360" y="60" width="160" height="80" />
+      </dmndi:DMNShape>
+      <dmndi:DMNEdge id="_0CC205C0-0A3D-40E2-B193-98F2AAA0CAC2-AUTO-TARGET" dmnElementRef="_042793A1-E24F-4AF4-91BA-9548CAD11530" sourceElement="_A754898C-C278-4FE8-9EA3-DA2A774057C0" targetElement="_591BA523-20B1-4480-AAF9-9B10C5182E62">
+        <di:waypoint x="440" y="280" />
+        <di:waypoint x="440" y="100" />
+      </dmndi:DMNEdge>
+      <dmndi:DMNShape id="_B372D7B0-F200-4D5A-8B01-966F267A8DAF" dmnElementRef="included0:_A6D5B020-683B-4EAD-B157-1527BDAB380A">
+        <dc:Bounds x="80" y="60" width="160" height="80" />
+      </dmndi:DMNShape>
+      <dmndi:DMNEdge id="_036F02E5-83FD-4A0C-9872-8180A8A4B323" dmnElementRef="_E8CA47E5-B21D-456B-892B-ACAEC80C58A3" sourceElement="_B372D7B0-F200-4D5A-8B01-966F267A8DAF" targetElement="_591BA523-20B1-4480-AAF9-9B10C5182E62">
+        <di:waypoint x="160" y="100" />
+        <di:waypoint x="440" y="100" />
+      </dmndi:DMNEdge>
+      <dmndi:DMNEdge id="_F0A70642-B604-451B-98E6-B850F7525BA4" dmnElementRef="_05405DA0-E999-41AF-B667-CEE500D4758A" sourceElement="_DD16768C-F1D6-481A-9CED-9596BF47FCA9" targetElement="_591BA523-20B1-4480-AAF9-9B10C5182E62">
+        <di:waypoint x="160" y="280" />
+        <di:waypoint x="440" y="100" />
+      </dmndi:DMNEdge>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>
+`;
+export const IMPORTED = `<?xml version="1.0" encoding="UTF-8" ?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/" expressionLanguage="https://www.omg.org/spec/DMN/20230324/FEEL/" namespace="https://kie.org/dmn/_423904AD-0925-4A04-AD04-2B2EE5263AF7" id="_17BFBD0F-D1FE-40ED-9DF6-D26668E87C4F" name="math logic" xmlns:dmndi="https://www.omg.org/spec/DMN/20230324/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" xmlns:kie="https://kie.org/dmn/extensions/1.0">
+  <businessKnowledgeModel name="simple plus" id="_A6D5B020-683B-4EAD-B157-1527BDAB380A">
+    <variable name="simple plus" id="_27EF7099-6F93-489B-A097-B7530EDBE369" typeRef="number" />
+    <encapsulatedLogic label="simple plus" typeRef="number" id="_202BB7B0-BD28-495C-9B4D-3662EE9BE244" kind="FEEL">
+      <formalParameter id="_B361C2A0-9326-4DD9-900D-59859BAF2EBD" name="p-1" typeRef="number" />
+      <formalParameter id="_2EC1F313-1C1E-49A1-958D-FB3B8E4C094B" name="p-2" typeRef="number" />
+      <literalExpression id="_41E92FB4-111C-46F3-8C38-F7B53D47CA03" typeRef="number" label="Return">
+        <text>p-1 + p-2</text>
+      </literalExpression>
+    </encapsulatedLogic>
+  </businessKnowledgeModel>
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram id="_E6C976F2-2D7F-4FE2-A4F7-2C94F62E5DD8" name="Default DRD" useAlternativeInputDataShape="false">
+      <di:extension>
+        <kie:ComponentsWidthsExtension>
+          <kie:ComponentWidths dmnElementRef="_41E92FB4-111C-46F3-8C38-F7B53D47CA03">
+            <kie:width>190</kie:width>
+          </kie:ComponentWidths>
+        </kie:ComponentsWidthsExtension>
+      </di:extension>
+      <dmndi:DMNShape id="_AF41DCE8-BA6E-4986-8363-AB58CA2099C7" dmnElementRef="_A6D5B020-683B-4EAD-B157-1527BDAB380A" isCollapsed="false" isListedInputData="false">
+        <dc:Bounds x="140" y="200" width="160" height="80" />
+      </dmndi:DMNShape>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>
+`;

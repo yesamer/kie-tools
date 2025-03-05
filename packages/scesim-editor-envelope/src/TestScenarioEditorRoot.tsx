@@ -249,12 +249,38 @@ export class TestScenarioEditorRoot extends React.Component<TestScenarioEditorRo
 
     const ext = __path.extname(normalizedPosixPathRelativeToTheOpenFile);
     if (ext === ".dmn") {
-      return {
+      const dmnModel = {
         normalizedPosixPathRelativeToTheOpenFile,
         type: "dmn",
         model: normalize(getDmnMarshaller(resource?.content ?? "", { upgradeTo: "latest" }).parser.parse()),
         svg: "",
       };
+
+      const importedDmns = dmnModel?.model.definitions.import?.filter((imp) =>
+        imp["@_importType"].toUpperCase().includes("DMN")
+      );
+      const importedDmnModelsNormalizedPosixPathRelativeToTheWorkspaceRoot = importedDmns?.map((importedDmn) =>
+        this.onRequestToResolvePathRelativeToTheOpenFile(importedDmn["@_locationURI"]!)
+      );
+      const importedDmnResources = await Promise.all(
+        importedDmnModelsNormalizedPosixPathRelativeToTheWorkspaceRoot!.map(
+          (normalizedPosixPathRelativeToTheWorkspaceRoot) =>
+            this.props.onRequestWorkspaceFileContent({
+              normalizedPosixPathRelativeToTheWorkspaceRoot,
+              opts: { type: "text" },
+            })
+        )
+      );
+      const importedDmnModels = importedDmnResources.map((resource) => ({
+        normalizedPosixPathRelativeToTheOpenFile: resource?.normalizedPosixPathRelativeToTheWorkspaceRoot,
+        type: "dmn",
+        model: normalize(getDmnMarshaller(resource?.content ?? "", { upgradeTo: "latest" }).parser.parse()),
+        svg: "",
+      }));
+
+      //AWAIT IN MAP FUNCTION
+
+      return dmnModel;
     } else {
       throw new Error(`Unknown extension '${ext}'.`);
     }

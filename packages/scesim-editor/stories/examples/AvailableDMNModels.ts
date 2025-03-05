@@ -20,7 +20,16 @@
 import * as TestScenarioEditor from "../../src/TestScenarioEditor";
 import { getMarshaller } from "@kie-tools/dmn-marshaller";
 import { normalize } from "@kie-tools/dmn-marshaller/dist/normalization/normalize";
-import { COLLECTION, EMPTY, LOAN_PRE_QUALIFICATION, MIXED, SIMPLE, TRAFFIC_VIOLATION } from "./ExternalDmnModels";
+import {
+  COLLECTION,
+  EMPTY,
+  IMPORTED,
+  IMPORTER,
+  LOAN_PRE_QUALIFICATION,
+  MIXED,
+  SIMPLE,
+  TRAFFIC_VIOLATION,
+} from "./ExternalDmnModels";
 
 export const availableModels: TestScenarioEditor.ExternalDmn[] = [
   {
@@ -32,6 +41,16 @@ export const availableModels: TestScenarioEditor.ExternalDmn[] = [
     model: normalize(getMarshaller(EMPTY, { upgradeTo: "latest" }).parser.parse()),
     svg: "",
     normalizedPosixPathRelativeToTheOpenFile: "dev-webapp/available-dmn-models/empty.dmn",
+  },
+  {
+    model: normalize(getMarshaller(IMPORTED, { upgradeTo: "latest" }).parser.parse()),
+    svg: "",
+    normalizedPosixPathRelativeToTheOpenFile: "dev-webapp/available-dmn-models/imported.dmn",
+  },
+  {
+    model: normalize(getMarshaller(IMPORTER, { upgradeTo: "latest" }).parser.parse()),
+    svg: "",
+    normalizedPosixPathRelativeToTheOpenFile: "dev-webapp/available-dmn-models/importer.dmn",
   },
   {
     model: normalize(getMarshaller(LOAN_PRE_QUALIFICATION, { upgradeTo: "latest" }).parser.parse()),

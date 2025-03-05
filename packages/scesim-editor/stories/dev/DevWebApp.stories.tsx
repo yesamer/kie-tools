@@ -155,6 +155,12 @@ function DevWebApp(props: TestScenarioEditorProps) {
   }, []);
 
   const onRequestExternalModelByPath = useCallback<OnRequestExternalModelByPath>(async (path) => {
+    const dmnModel = availableModelsByPath[path];
+    const importedDmns = dmnModel?.model.definitions.import?.filter((imp) =>
+      imp["@_importType"].toUpperCase().includes("DMN")
+    );
+    const importedDmnModels = importedDmns?.map((importedDmn) => availableModelsByPath[importedDmn["@_locationURI"]!]);
+
     return availableModelsByPath[path] ?? null;
   }, []);
 
