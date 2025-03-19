@@ -241,16 +241,15 @@ export class TestScenarioEditorRoot extends React.Component<TestScenarioEditorRo
 
     const ext = __path.extname(normalizedPosixPathRelativeToTheOpenFile);
     if (ext === ".dmn") {
-      const dmnModel = {
-        normalizedPosixPathRelativeToTheOpenFile,
-        type: "dmn",
-        model: normalize(getDmnMarshaller(resource?.content ?? "", { upgradeTo: "latest" }).parser.parse()),
-        svg: "",
-      };
+      const dmnModel = normalize(getDmnMarshaller(resource?.content ?? "", { upgradeTo: "latest" }).parser.parse());
 
-      const importedDmns = dmnModel?.model.definitions.import?.filter((imp) =>
+      const importedDmns = dmnModel.definitions.import?.filter((imp) =>
         imp["@_importType"].toUpperCase().includes("DMN")
       );
+      const importedDmnNamespaceToPrefixMap = new Map(
+        importedDmns?.map((importedDmn) => [importedDmn["@_namespace"], importedDmn["@_name"]])
+      );
+
       const importedDmnModelsNormalizedPosixPathRelativeToTheWorkspaceRoot = importedDmns?.map((importedDmn) =>
         this.onRequestToResolvePathRelativeToTheOpenFile(importedDmn["@_locationURI"]!)
       );
@@ -263,16 +262,29 @@ export class TestScenarioEditorRoot extends React.Component<TestScenarioEditorRo
             })
         )
       );
-      const importedDmnModels = importedDmnResources.map((resource) => ({
-        normalizedPosixPathRelativeToTheOpenFile: resource?.normalizedPosixPathRelativeToTheWorkspaceRoot,
-        type: "dmn",
-        model: normalize(getDmnMarshaller(resource?.content ?? "", { upgradeTo: "latest" }).parser.parse()),
+      const importedDmnModels = importedDmnResources.map((resource) => {
+        const importedDmnModel = normalize(
+          getDmnMarshaller(resource?.content ?? "", { upgradeTo: "latest" }).parser.parse()
+        );
+
+        return {
+          model: {
+            normalizedPosixPathRelativeToTheOpenFile: resource?.normalizedPosixPathRelativeToTheWorkspaceRoot,
+            type: "dmn",
+            model: importedDmnModel,
+            svg: "",
+          },
+          prefix: importedDmnNamespaceToPrefixMap.get(importedDmnModel.definitions["@_namespace"]),
+        };
+      });
+
+      return {
+        importedDmnModels,
+        model: dmnModel,
+        normalizedPosixPathRelativeToTheOpenFile,
         svg: "",
-      }));
-
-      //AWAIT IN MAP FUNCTION
-
-      return dmnModel;
+        type: "dmn",
+      };
     } else {
       throw new Error(`Unknown extension '${ext}'.`);
     }

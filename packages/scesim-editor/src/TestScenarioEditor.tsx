@@ -101,14 +101,13 @@ export type OnRequestExternalModelByPath = (
 export type ExternalDmnsIndex = Map<string, ExternalDmn | undefined>;
 
 export type ExternalDmn = {
+  importedModels?: {
+    model: ExternalDmn;
+    prefix: string;
+  }[];
   model: Normalized<DmnLatestModel>;
   normalizedPosixPathRelativeToTheOpenFile: string;
   svg: string;
-};
-
-export type ExternalDmnWithImportedDmns = {
-  model: ExternalDmn;
-  importedModels: ExternalDmn | undefined;
 };
 
 export type TestScenarioEditorProps = {

@@ -122,6 +122,57 @@ export function createNewDmnTypeTestScenario({
       "EXPECT",
       itemDefinitions
     );
+
+    if (dmnModel.importedModels !== undefined) {
+      for (const importedModel of dmnModel.importedModels) {
+        const importedItemDefinitions = new Map(
+          importedModel.model.model.definitions.itemDefinition?.map(
+            (itemDefinition) => [itemDefinition["@_name"], itemDefinition] as const
+          )
+        );
+
+        const importedInputDataElements = importedModel.model.model.definitions.drgElement?.filter(
+          (drgElement) => drgElement.__$$element === "inputData"
+        );
+        const importedDecisionElements = importedModel.model.model.definitions.drgElement?.filter(
+          (drgElement) => drgElement.__$$element === "decision"
+        );
+
+        givenFactMappingsToPush.push(
+          ...generateFactMappingsAndFactMappingValuesFromDmnModel(
+            importedInputDataElements!,
+            "GIVEN",
+            importedItemDefinitions,
+            importedModel.prefix
+          )
+        );
+        expectFactMappingsToPush.push(
+          ...generateFactMappingsAndFactMappingValuesFromDmnModel(
+            importedDecisionElements!,
+            "EXPECT",
+            importedItemDefinitions,
+            importedModel.prefix
+          )
+        );
+      }
+
+      // const importedInputs = dmnModel.importedModels.flatMap(importedDmnModel => importedDmnModel.model.model.definitions.drgElement!.filter((drgElement) => drgElement.__$$element === "inputData"));
+      // const importedDecisions = dmnModel.importedModels.flatMap(importedDmnModel => importedDmnModel.model.model.definitions.drgElement!.filter((drgElement) => drgElement.__$$element === "decision"));
+
+      // // inputDataElements.push(...importedInputs);
+      // // decisionElements.push(...importedDecisions);
+
+      // const itemDefinitions2 = new Map(
+      //   dmnModel.importedModels.flatMap(importedDmnModel => importedDmnModel.model.model.definitions.itemDefinition!.map(
+      //      (itemDefinition) => [itemDefinition["@_name"], itemDefinition] as const
+      //    )
+      //   )
+      // );
+
+      // itemDefinitions = new Map([...itemDefinitions, ...itemDefinitions2]);
+
+      // console.log("asd");
+    }
   }
 
   /* If no GIVEN FactMapping is present, we add an empty one. */
@@ -143,23 +194,32 @@ export function createNewDmnTypeTestScenario({
 function generateFactMappingsAndFactMappingValuesFromDmnModel(
   drgElements: DMN15__tInputData[] | DMN15__tDecision[],
   expressionIdentifierType: "EXPECT" | "GIVEN",
-  allItemDefinitionsMap: Map<string, DMN15__tItemDefinition>
+  allItemDefinitionsMap: Map<string, DMN15__tItemDefinition>,
+  importPrefix?: string
 ) {
   const factMappingsToPush = [] as FactMapping[];
 
   drgElements.forEach((drgElement) => {
     const itemDefinition = allItemDefinitionsMap.get(drgElement.variable!["@_typeRef"]!);
     if (!itemDefinition?.itemComponent || itemDefinition?.itemComponent.length === 0) {
+      const prefix = importPrefix !== undefined && itemDefinition !== undefined ? importPrefix.concat(".") : "";
+      const className = `${prefix}${drgElement.variable!["@_typeRef"]!}`;
+      const name = `${prefix}${drgElement.variable!["@_name"]!}`;
+
+      //TODO DA RIVEDERE
+      // NON FUNZIONA CON TIPI SEMPLICI
+      // EXPRESSION?
+
       factMappingsToPush.push({
-        className: itemDefinition?.["@_isCollection"] ? "java.util.List" : drgElement.variable!["@_typeRef"]!,
+        className: itemDefinition?.["@_isCollection"] ? "java.util.List" : className,
         columnWidth: 100,
         expressionAlias: "value",
-        expressionElements: [drgElement.variable!["@_name"]!],
+        expressionElements: [name],
         expressionIdentifierType: expressionIdentifierType,
-        factAlias: drgElement.variable!["@_name"]!,
-        factIdentifierName: drgElement.variable!["@_name"]!,
-        factIdentifierClassName: drgElement.variable!["@_typeRef"]!,
-        genericTypes: itemDefinition?.["@_isCollection"] ? [drgElement.variable!["@_typeRef"]!] : undefined,
+        factAlias: name,
+        factIdentifierName: name,
+        factIdentifierClassName: className,
+        genericTypes: itemDefinition?.["@_isCollection"] ? [className] : undefined,
       });
     } else {
       itemDefinition?.itemComponent!.forEach((itemComponent) => {
@@ -171,7 +231,8 @@ function generateFactMappingsAndFactMappingValuesFromDmnModel(
             expressionIdentifierType,
             itemComponent,
             drgElement.variable!["@_name"]!,
-            drgElement.variable!["@_typeRef"]!
+            drgElement.variable!["@_typeRef"]!,
+            importPrefix
           )
         );
       });
@@ -187,8 +248,9 @@ function recursevlyNavigateItemComponent(
   expressionElements: string[],
   expressionIdentifierType: "EXPECT" | "GIVEN",
   itemComponent: DMN15__tItemDefinition,
-  name: string,
-  typeRef: string
+  factName: string,
+  typeRef: string,
+  importPrefix?: string
 ) {
   const factMappingsToReturn: FactMapping[] = [];
   const currentItemDefinition = allItemDefinitionsMap.has(itemComponent?.typeRef?.__$$text ?? "")
@@ -204,22 +266,25 @@ function recursevlyNavigateItemComponent(
           [...expressionElements, itemComponent["@_name"]],
           expressionIdentifierType,
           nestedItemComponent,
-          name,
+          factName,
           typeRef
         )
       );
     });
   } else {
+    const prefix = importPrefix !== undefined ? importPrefix.concat(".") : "";
+    const className = `${prefix}${itemComponent.typeRef!.__$$text}`;
+
     factMappingsToReturn.push({
       className: itemComponent?.["@_isCollection"] ? "java.util.List" : itemComponent.typeRef!.__$$text,
       columnWidth: columnWidth,
       expressionAlias: [...expressionElements.slice(1), itemComponent["@_name"]].join("."),
       expressionElements: [...expressionElements, itemComponent["@_name"]],
       expressionIdentifierType: expressionIdentifierType,
-      factAlias: name,
-      factIdentifierName: name,
-      factIdentifierClassName: typeRef,
-      genericTypes: itemComponent?.["@_isCollection"] ? [itemComponent!.typeRef!.__$$text] : undefined,
+      factAlias: `${prefix}${factName}`,
+      factIdentifierName: `${prefix}${factName}`,
+      factIdentifierClassName: `${prefix}${typeRef}`,
+      genericTypes: itemComponent?.["@_isCollection"] ? [className] : undefined, // TODO CASO BASTARDO!
     });
   }
 

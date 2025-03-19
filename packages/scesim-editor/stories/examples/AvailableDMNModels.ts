@@ -23,12 +23,14 @@ import { normalize } from "@kie-tools/dmn-marshaller/dist/normalization/normaliz
 import {
   COLLECTION,
   EMPTY,
+  IMPORT_TV,
   IMPORTED,
   IMPORTER,
   LOAN_PRE_QUALIFICATION,
   MIXED,
   SIMPLE,
   TRAFFIC_VIOLATION,
+  TV_2,
 } from "./ExternalDmnModels";
 
 export const availableModels: TestScenarioEditor.ExternalDmn[] = [
@@ -41,6 +43,21 @@ export const availableModels: TestScenarioEditor.ExternalDmn[] = [
     model: normalize(getMarshaller(EMPTY, { upgradeTo: "latest" }).parser.parse()),
     svg: "",
     normalizedPosixPathRelativeToTheOpenFile: "dev-webapp/available-dmn-models/empty.dmn",
+  },
+  {
+    importedModels: [
+      {
+        model: {
+          model: normalize(getMarshaller(TV_2, { upgradeTo: "latest" }).parser.parse()),
+          svg: "",
+          normalizedPosixPathRelativeToTheOpenFile: "dev-webapp/available-dmn-models/tv_2.dmn",
+        },
+        prefix: "tv",
+      },
+    ],
+    model: normalize(getMarshaller(IMPORT_TV, { upgradeTo: "latest" }).parser.parse()),
+    svg: "",
+    normalizedPosixPathRelativeToTheOpenFile: "dev-webapp/available-dmn-models/import_traffic_violation.dmn",
   },
   {
     model: normalize(getMarshaller(IMPORTED, { upgradeTo: "latest" }).parser.parse()),
