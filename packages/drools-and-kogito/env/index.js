@@ -44,7 +44,7 @@ module.exports = composeEnv([rootEnv], {
       description: "Git repository URL for Kogito Runtimes",
     },
     DROOLS_AND_KOGITO__kogitoRuntimesRepoGitRef: {
-      default: "96bd82d82552782bd4dd4de9c7721a3a08b438a0",
+      default: "4d03cf0a0908b8fb2fbd2d14381ededc62927f83",
       description: "Git ref for the Kogito Runtimes repository (SHA, branch, or tag)",
     },
     DROOLS_AND_KOGITO__kogitoAppsRepoUrl: {
